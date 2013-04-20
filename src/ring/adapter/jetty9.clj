@@ -125,7 +125,7 @@ supplied options:
         the-handler (doto (HandlerList.)
                       (.setHandlers
                        (into-array (conj ws-handlers ring-app-handler))))]
-    (.setHandler the-handler)
+    (.setHandler s the-handler)
     (.start s)
     (when (:join? options true)
       (.join s))
