@@ -5,7 +5,7 @@ Derived from ring.adapter.jetty"
             Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory SslConnectionFactory)
            (org.eclipse.jetty.server.handler
-            AbstractHandler ContextHandler HandlerList)
+            AbstractHandler ContextHandler ContextHandlerCollection) 
            (org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler)
            (org.eclipse.jetty.util.ssl SslContextFactory)
@@ -122,10 +122,10 @@ supplied options:
                             (.setContextPath (key %))
                             (.setHandler (proxy-ws-handler (val %))))
                          (or (:websockets options) []))
-        the-handler (doto (HandlerList.)
+        contexts (doto (ContextHandlerCollection.)
                       (.setHandlers
                        (into-array (conj ws-handlers ring-app-handler))))]
-    (.setHandler s the-handler)
+    (.setHandler s contexts)
     (.start s)
     (when (:join? options true)
       (.join s))
