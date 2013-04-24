@@ -4,9 +4,11 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ## Usage
 
-[info.sunng/ring-jetty9-adapter "0.1.0"]
+### Leiningen
 
-Code:
+`[info.sunng/ring-jetty9-adapter "0.1.0"]`
+
+### Code
 ```clojure
 (use 'ring.adapter.jetty9)
 (run-jetty app {:port 50505}) ;; same as the 'official' adapter of jetty 7
@@ -54,7 +56,7 @@ There is a new option `:websockets` available. Accepting a map of context path a
 ```
 
 In the javascript:
-```
+```javascript
 // remember to add tailing slash. 
 // Otherwise, jetty will return a 302 on websocket upgrade request, 
 // which is not supported by most browsers.
