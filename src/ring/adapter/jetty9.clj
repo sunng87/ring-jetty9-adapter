@@ -2,10 +2,10 @@
   "Adapter for the Jetty 9 server, with websocket support.
 Derived from ring.adapter.jetty"
   (:import (org.eclipse.jetty.server
-            Server Request ServerConnector
+            Handler Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory SslConnectionFactory)
            (org.eclipse.jetty.server.handler
-            AbstractHandler ContextHandler ContextHandlerCollection) 
+            HandlerCollection AbstractHandler ContextHandler)
            (org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler)
            (org.eclipse.jetty.util.ssl SslContextFactory)
@@ -69,7 +69,7 @@ Derived from ring.adapter.jetty"
                (.setDaemon (:daemon? options false)))
         server (doto (Server. pool)
                  (.addBean (ScheduledExecutorScheduler.)))
-        
+
         http-configuration (http-config options)
         http-connector (doto (ServerConnector.
                               ^Server server
@@ -115,19 +115,18 @@ supplied options:
   [handler options]
   (let [^Server s (create-server (dissoc options :configurator))
         ^QueuedThreadPool p (QueuedThreadPool. ^Integer (options :max-threads 50))
-        ring-app-handler (doto (ContextHandler.)
-                           (.setContextPath "/")
-                           (.setHandler (proxy-handler handler)))
+        ring-app-handler (proxy-handler handler)
         ws-handlers (map #(doto (ContextHandler.)
                             (.setContextPath (key %))
                             (.setHandler (proxy-ws-handler (val %))))
                          (or (:websockets options) []))
-        contexts (doto (ContextHandlerCollection.)
-                      (.setHandlers
-                       (into-array (conj ws-handlers ring-app-handler))))]
+        contexts (doto (HandlerCollection.)
+                   (.setHandlers
+                    (into-array Handler (conj ws-handlers ring-app-handler))))]
     (.setHandler s contexts)
+    (when-let [configurator (:configurator options)]
+      (configurator s))
     (.start s)
     (when (:join? options true)
       (.join s))
     s))
-
