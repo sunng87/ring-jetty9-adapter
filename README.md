@@ -6,7 +6,7 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ### Leiningen
 
-`[info.sunng/ring-jetty9-adapter "0.2.0"]`
+`[info.sunng/ring-jetty9-adapter "0.3.0"]`
 
 ### Code
 ```clojure
