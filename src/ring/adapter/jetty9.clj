@@ -109,9 +109,8 @@ supplied options:
 :truststore - a truststore to use for SSL connections
 :trust-password - the password to the truststore
 :max-threads - the maximum number of threads to use (default 50)
-:client-auth - SSL client certificate authenticate, may be set to :need,
-:websockets - a map of websockets handler {\"/context\" handler}
-:want or :none (defaults to :none)"
+:client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
+:websockets - a map of websockets handler {\"/context\" handler}"
   [handler options]
   (let [^Server s (create-server (dissoc options :configurator))
         ^QueuedThreadPool p (QueuedThreadPool. ^Integer (options :max-threads 50))
