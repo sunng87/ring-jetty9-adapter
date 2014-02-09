@@ -5,7 +5,7 @@ Derived from ring.adapter.jetty"
              Handler Server Request ServerConnector
              HttpConfiguration HttpConnectionFactory SslConnectionFactory)
            (org.eclipse.jetty.server.handler
-             HandlerCollection AbstractHandler ContextHandler)
+             HandlerCollection AbstractHandler ContextHandler HandlerList)
            (org.eclipse.jetty.util.thread
              QueuedThreadPool ScheduledExecutorScheduler)
            (org.eclipse.jetty.util.ssl SslContextFactory)
@@ -17,37 +17,37 @@ Derived from ring.adapter.jetty"
   (:require [ring.util.servlet :as servlet]))
 
 (defn- proxy-ws-adapter
-  [ws-fns ring-request-map]
+  [ws-fns ring-request-map ring-session]
   (proxy [WebSocketAdapter] []
     (onWebSocketConnect [^Session session]
       (proxy-super onWebSocketConnect session)
-      ((:connect-fn ws-fns) ring-request-map session))
-    ;(.. session getRemote (sendString "hahahaha!!@!")))
-    (onWebSocketError [^Throwable error]
-      ((:error-fn ws-fns) ring-request-map error))
+      ((:connect-fn ws-fns) ring-request-map session ring-session))
+    (onWebSocketError [^Throwable e]
+      ((:error-fn ws-fns) ring-request-map ring-session e))
     (onWebSocketText [^String message]
-      ((:text-fn ws-fns) ring-request-map message))
-    ;(let [session (.getSession this)]
-    ;  (.. session getRemote (sendString "hahahaha!!@!"))))
+      ((:text-fn ws-fns) ring-request-map (.getSession ^WebSocketAdapter this) ring-session message))
     (onWebSocketClose [statusCode ^String reason]
       (proxy-super onWebSocketClose statusCode reason)
-      ((:close-fn ws-fns) ring-request-map statusCode reason))
-    (onWebSocketBinary [ring-request-map ^byte [] payload offset len]
-      ((:binary-fn ws-fns) ring-request-map payload offset len))))
+      ((:close-fn ws-fns) ring-request-map ring-session statusCode reason))
+    (onWebSocketBinary [^byte [] payload offset len]
+      ((:binary-fn ws-fns) ring-request-map (.getSession ^WebSocketAdapter this) payload offset len))))
 
-(defn- proxy-ws-creator
+(defn- reify-ws-creator
   [ws-fns]
-  (proxy [WebSocketCreator] []
-    (createWebSocket [^ServletUpgradeRequest upRequest ^ServletUpgradeResponse upResponse]
-      (let [ring-request-map (.getServletAttribute upRequest "ring-request-map")]
-        (proxy-ws-adapter ws-fns ring-request-map)))))
+  (reify WebSocketCreator
+    (createWebSocket [this ^ServletUpgradeRequest upRequest ^ServletUpgradeResponse upResponse]
+      (let [ring-request-map (.getServletAttribute upRequest "ring-request-map")
+            handler (:create-fn ws-fns)
+            {status :status ring-session :inner-session} (handler ring-request-map)]
+        (when (= status 200)
+          (proxy-ws-adapter ws-fns ring-request-map ring-session))))))
 
 (defn- proxy-ws-handler
   "Returns a Jetty websocket handler"
   [ws-fns]
   (proxy [WebSocketHandler] []
     (configure [^WebSocketServletFactory factory]
-      (.setCreator factory (proxy-ws-creator ws-fns)))
+      (.setCreator factory (reify-ws-creator ws-fns)))
     (handle [^java.lang.String target, ^org.eclipse.jetty.server.Request baseRequest, ^javax.servlet.http.HttpServletRequest request, ^javax.servlet.http.HttpServletResponse response]
       (let [request-map (servlet/build-request-map request)]
         (.setAttribute request "ring-request-map" request-map))
@@ -142,7 +142,19 @@ supplied options:
 :trust-password - the password to the truststore
 :max-threads - the maximum number of threads to use (default 50)
 :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
-:websockets - a map of websockets handler {\"/context\" {}}"
+:websockets - a map from context path to a map of handler fns:
+
+ {\"/context\" {:create-fn  #(create-fn %)              ; ring-request-map
+                :connect-fn #(connect-fn % %2 %3)       ; ring-request-map ^Session ws-conn ring-session
+                :text-fn    #(text-fn % %2 %3 %4)       ; ring-request-map ^Session ws-session ring-session message
+                :binary-fn  #(binary-fn % %2 %3 %4 %5)  ; ring-request-map ^Session ws-session payload offset len
+                :close-fn   #(close-fn % %2 %3 %4)      ; ring-request-map ring-session statusCode reason
+                :error-fn   #(error-fn % %2 %3)}}       ; ring-request-map ring-session e
+
+              create-fn is a ring handler that runs inside WebSocketCreator, and allows the developer to authenticate
+              and/or authorize the connection. If it returns status 200, the socket will be created. Also, if create-fn
+              sets the key :inner-session, this session map will be passed along to all the rest of the websocket
+              handlers."
   [handler options]
   (let [^Server s (create-server (dissoc options :configurator))
         ^QueuedThreadPool p (QueuedThreadPool. ^Integer (options :max-threads 50))
@@ -151,9 +163,9 @@ supplied options:
                            (.setContextPath (key %))
                            (.setHandler (proxy-ws-handler (val %))))
                          (or (:websockets options) []))
-        contexts (doto (HandlerCollection.)
+        contexts (doto (HandlerList.)
                    (.setHandlers
-                     (into-array Handler (conj ws-handlers ring-app-handler))))]
+                     (into-array Handler (reverse (conj ws-handlers ring-app-handler)))))]
     (.setHandler s contexts)
     (when-let [configurator (:configurator options)]
       (configurator s))
