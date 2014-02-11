@@ -6,7 +6,7 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ### Leiningen
 
-`[info.sunng/ring-jetty9-adapter "0.3.0"]`
+`[info.sunng/ring-jetty9-adapter "0.5.0"]`
 
 ### Code
 ```clojure
@@ -16,48 +16,27 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ### WebSocket
 
-Use clojure's `gen-class` to create a websocket listener class:
+From 0.5.0, you don't need `gen-class` to use websocket, thanks to
+[NoamB](https://github.com/NoamB).
 
 ```clojure
-;; sample code
-(ns xxx.ws.location
-  (:gen-class
-   :name xxx.LocationTracker
-   :init init
-   :state state
-   :extends org.eclipse.jetty.websocket.api.WebSocketAdapter
-   :prefix ws-
-   :exposes-methods {onWebSocketConnect superOnWebSocketConnect})
-  (:require [clojure.data.json :as json]
-            [clojure.tools.logging :as logging])
-  (:import (org.eclipse.jetty.websocket.api WebSocketAdapter)
-           (java.util UUID)))
-
-(defn ws-init []
-  [[] {:client-id (str (UUID/randomUUID))}])
-
-(defn ws-onWebSocketConnect [this session]
-  (.superOnWebSocketConnect this session)
-  (logging/warn "new connection: " (get-client-id this))
-
-(defn ws-onWebSocketText [this message]
-  (let [msg (json/read-json message)]
-    (case (:type msg)
-      ...)))
-
-(defn ws-onWebSocketClose [this status reason]
-  (logging/debug "close socket"))
+(def ws-handler {:create-fn (fn [ring-req])
+                 :connect-fn (fn [ring-req ws-conn ring-session])
+                 :error-fn (fn [ring-req ring-session e])
+                 :close-fn (fn [ring-req ring-session status reason])
+                 :text-fn (fn [ring-req ws-session ring-session text-message])
+                 :binary-fn (fn [ring-req ws-session ring-session payload offset len])})
 ```
 
 There is a new option `:websockets` available. Accepting a map of context path and listener class:
 ```clojure
 (use 'ring.adapter.jetty9)
-(run-jetty app {:websockets {"/loc" LocationTracker}})
+(run-jetty app {:websockets {"/loc" ws-handler}})
 ```
 
 In the javascript:
 ```javascript
-// remember to add tailing slash.
+// remember to add the trailing slash.
 // Otherwise, jetty will return a 302 on websocket upgrade request,
 // which is not supported by most browsers.
 var ws = new WebSocket("ws://somehost/loc/");
