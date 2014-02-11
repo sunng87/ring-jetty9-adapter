@@ -2,12 +2,12 @@
   "Adapter for the Jetty 9 server, with websocket support.
 Derived from ring.adapter.jetty"
   (:import (org.eclipse.jetty.server
-             Handler Server Request ServerConnector
-             HttpConfiguration HttpConnectionFactory SslConnectionFactory)
+            Handler Server Request ServerConnector
+            HttpConfiguration HttpConnectionFactory SslConnectionFactory)
            (org.eclipse.jetty.server.handler
-             HandlerCollection AbstractHandler ContextHandler HandlerList)
+            HandlerCollection AbstractHandler ContextHandler HandlerList)
            (org.eclipse.jetty.util.thread
-             QueuedThreadPool ScheduledExecutorScheduler)
+            QueuedThreadPool ScheduledExecutorScheduler)
            (org.eclipse.jetty.util.ssl SslContextFactory)
            (org.eclipse.jetty.websocket.server WebSocketHandler)
            (org.eclipse.jetty.websocket.servlet WebSocketServletFactory WebSocketCreator ServletUpgradeRequest
@@ -29,8 +29,9 @@ Derived from ring.adapter.jetty"
     (onWebSocketClose [statusCode ^String reason]
       (proxy-super onWebSocketClose statusCode reason)
       ((:close-fn ws-fns) ring-request-map ring-session statusCode reason))
-    (onWebSocketBinary [^byte [] payload offset len]
-      ((:binary-fn ws-fns) ring-request-map (.getSession ^WebSocketAdapter this) payload offset len))))
+    (onWebSocketBinary [^bytes payload offset len]
+      ((:binary-fn ws-fns) ring-request-map (.getSession ^WebSocketAdapter this)
+       ring-session payload offset len))))
 
 (defn- reify-ws-creator
   [ws-fns]
@@ -104,18 +105,18 @@ Derived from ring.adapter.jetty"
 
         http-configuration (http-config options)
         http-connector (doto (ServerConnector.
-                               ^Server server
-                               (into-array [(HttpConnectionFactory. http-configuration)]))
+                              ^Server server
+                              (into-array [(HttpConnectionFactory. http-configuration)]))
                          (.setPort (options :port 80))
                          (.setHost (options :host)))
 
         https-connector (when (or (options :ssl?) (options :ssl-port))
                           (doto (ServerConnector.
-                                  server
-                                  (SslConnectionFactory.
-                                    (ssl-context-factory options)
-                                    "http/1.1")
-                                  (into-array [(HttpConnectionFactory. http-configuration)]))
+                                 server
+                                 (SslConnectionFactory.
+                                  (ssl-context-factory options)
+                                  "http/1.1")
+                                 (into-array [(HttpConnectionFactory. http-configuration)]))
                             (.setPort (options :ssl-port 443))
                             (.setHost (options :host))))
 
@@ -147,7 +148,7 @@ supplied options:
  {\"/context\" {:create-fn  #(create-fn %)              ; ring-request-map
                 :connect-fn #(connect-fn % %2 %3)       ; ring-request-map ^Session ws-conn ring-session
                 :text-fn    #(text-fn % %2 %3 %4)       ; ring-request-map ^Session ws-session ring-session message
-                :binary-fn  #(binary-fn % %2 %3 %4 %5)  ; ring-request-map ^Session ws-session payload offset len
+                :binary-fn  #(binary-fn % %2 %3 %4 %5 %6)  ; ring-request-map ^Session ws-session ring-session payload offset len
                 :close-fn   #(close-fn % %2 %3 %4)      ; ring-request-map ring-session statusCode reason
                 :error-fn   #(error-fn % %2 %3)}}       ; ring-request-map ring-session e
 
@@ -160,12 +161,12 @@ supplied options:
         ^QueuedThreadPool p (QueuedThreadPool. ^Integer (options :max-threads 50))
         ring-app-handler (proxy-handler handler)
         ws-handlers (map #(doto (ContextHandler.)
-                           (.setContextPath (key %))
-                           (.setHandler (proxy-ws-handler (val %))))
+                            (.setContextPath (key %))
+                            (.setHandler (proxy-ws-handler (val %))))
                          (or (:websockets options) []))
         contexts (doto (HandlerList.)
                    (.setHandlers
-                     (into-array Handler (reverse (conj ws-handlers ring-app-handler)))))]
+                    (into-array Handler (reverse (conj ws-handlers ring-app-handler)))))]
     (.setHandler s contexts)
     (when-let [configurator (:configurator options)]
       (configurator s))
