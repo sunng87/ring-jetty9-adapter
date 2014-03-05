@@ -38,7 +38,7 @@ Derived from ring.adapter.jetty"
   (reify WebSocketCreator
     (createWebSocket [this ^ServletUpgradeRequest upRequest ^ServletUpgradeResponse upResponse]
       (let [ring-request-map (.getServletAttribute upRequest "ring-request-map")
-            handler (:create-fn ws-fns)
+            handler (or (:create-fn ws-fns) (constantly {:status 200}))
             {status :status ring-session :inner-session} (handler ring-request-map)]
         (when (= status 200)
           (proxy-ws-adapter ws-fns ring-request-map ring-session))))))
@@ -168,7 +168,7 @@ supplied options:
         ring-app-handler (proxy-handler handler)
         ws-handlers (map #(doto (ContextHandler.)
                             (.setContextPath (key %))
-                            (.setHandler (proxy-ws-handler (val %))))
+                            (.setHandler (proxy-ws-handler (val %) options)))
                          (or (:websockets options) []))
         contexts (doto (HandlerList.)
                    (.setHandlers
