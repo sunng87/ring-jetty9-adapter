@@ -49,7 +49,7 @@ Derived from ring.adapter.jetty"
   (proxy [WebSocketHandler] []
     (configure [^WebSocketServletFactory factory]
       (-> (.getPolicy factory)
-          (.setIdleTimeout (options :max-idle-time 200000)))
+          (.setIdleTimeout (options :ws-max-idle-time 500000)))
       (.setCreator factory (reify-ws-creator ws-fns)))
     (handle [^java.lang.String target, ^org.eclipse.jetty.server.Request baseRequest, ^javax.servlet.http.HttpServletRequest request, ^javax.servlet.http.HttpServletResponse response]
       (let [request-map (servlet/build-request-map request)]
@@ -147,6 +147,7 @@ supplied options:
 :trust-password - the password to the truststore
 :max-threads - the maximum number of threads to use (default 50)
 :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
+:ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
 :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
 :websockets - a map from context path to a map of handler fns:
 
