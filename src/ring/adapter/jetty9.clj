@@ -108,7 +108,8 @@ Derived from ring.adapter.jetty"
                               ^Server server
                               (into-array [(HttpConnectionFactory. http-configuration)]))
                          (.setPort (options :port 80))
-                         (.setHost (options :host)))
+                         (.setHost (options :host))
+                         (.setIdleTimeout (options :max-idle-time 200000)))
 
         https-connector (when (or (options :ssl?) (options :ssl-port))
                           (doto (ServerConnector.
@@ -118,7 +119,8 @@ Derived from ring.adapter.jetty"
                                   "http/1.1")
                                  (into-array [(HttpConnectionFactory. http-configuration)]))
                             (.setPort (options :ssl-port 443))
-                            (.setHost (options :host))))
+                            (.setHost (options :host))
+                            (.setIdleTimeout (options :max-idle-time 200000))))
 
         connectors (if https-connector
                      [http-connector https-connector]
@@ -142,6 +144,7 @@ supplied options:
 :truststore - a truststore to use for SSL connections
 :trust-password - the password to the truststore
 :max-threads - the maximum number of threads to use (default 50)
+:max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
 :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
 :websockets - a map from context path to a map of handler fns:
 
