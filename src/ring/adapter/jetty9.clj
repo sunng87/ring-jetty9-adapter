@@ -45,9 +45,11 @@ Derived from ring.adapter.jetty"
 
 (defn- proxy-ws-handler
   "Returns a Jetty websocket handler"
-  [ws-fns]
+  [ws-fns options]
   (proxy [WebSocketHandler] []
     (configure [^WebSocketServletFactory factory]
+      (-> (.getPolicy factory)
+          (.setIdleTimeout (options :max-idle-time 200000)))
       (.setCreator factory (reify-ws-creator ws-fns)))
     (handle [^java.lang.String target, ^org.eclipse.jetty.server.Request baseRequest, ^javax.servlet.http.HttpServletRequest request, ^javax.servlet.http.HttpServletResponse response]
       (let [request-map (servlet/build-request-map request)]
