@@ -6,7 +6,7 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ### Leiningen
 
-`[info.sunng/ring-jetty9-adapter "0.5.1"]`
+`[info.sunng/ring-jetty9-adapter "0.6.0"]`
 
 ### Code
 ```clojure
@@ -16,17 +16,23 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ### WebSocket
 
-From 0.5.0, you don't need `gen-class` to use websocket, thanks to
-[NoamB](https://github.com/NoamB).
+You can define following handlers for websocket events.
 
 ```clojure
-(def ws-handler {:create-fn (fn [ring-req])
-                 :connect-fn (fn [ring-req ws-conn ring-session])
-                 :error-fn (fn [ring-req ring-session e])
-                 :close-fn (fn [ring-req ring-session status reason])
-                 :text-fn (fn [ring-req ws-session ring-session text-message])
-                 :binary-fn (fn [ring-req ws-session ring-session payload offset len])})
+(def ws-handler {:on-connect (fn [ws])
+                 :on-error (fn [ws e])
+                 :on-close (fn [ws])
+                 :on-text (fn [ws text-message])
+                 :on-bytes (fn [ws bytes offset len])})
 ```
+
+WebSocketProtocol allows you to read and write data on the `ws` value:
+
+* (send-text ws ^String text)
+* (send-bytes ws ^ByteBuffer bytes)
+* (close ws)
+* (remote-addr ws)
+* (idle-timeout ws timeout)
 
 There is a new option `:websockets` available. Accepting a map of context path and listener class:
 ```clojure
