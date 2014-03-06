@@ -13,35 +13,53 @@ Derived from ring.adapter.jetty"
            (org.eclipse.jetty.websocket.servlet WebSocketServletFactory WebSocketCreator ServletUpgradeRequest
                                                 ServletUpgradeResponse)
            (javax.servlet.http HttpServletRequest HttpServletResponse)
-           (org.eclipse.jetty.websocket.api WebSocketAdapter Session))
+           (org.eclipse.jetty.websocket.api WebSocketAdapter Session)
+           [java.nio ByteBuffer])
   (:require [ring.util.servlet :as servlet]))
 
+(defprotocol WebSocketProtocol
+  (send-text [this msg])
+  (send-bytes [this bytes])
+  (close [this])
+  (remote-addr [this])
+  (idle-timeout [this ms]))
+
+(extend-protocol WebSocketProtocol
+  WebSocketAdapter
+  (send-text [this msg]
+    (.. this (getRemote) (sendString ^String msg)))
+  (send-bytes [this bytes]
+    (.. this (getRemote) (sendBytes ^ByteBuffer bytes)))
+  (close [this]
+    (.. this (getSession) (close)))
+  (remote-addr [this]
+    (.. this (getSession) (getRemoteAddress)))
+  (idle-timeout [this ms]
+    (.. this (getSession) (setIdleTimeout ^long ms))))
+
+(defn- do-nothing [& args])
+
 (defn- proxy-ws-adapter
-  [ws-fns ring-request-map ring-session]
+  [ws-fns]
   (proxy [WebSocketAdapter] []
     (onWebSocketConnect [^Session session]
       (proxy-super onWebSocketConnect session)
-      ((:connect-fn ws-fns) ring-request-map session ring-session))
+      ((:on-connect ws-fns do-nothing) this))
     (onWebSocketError [^Throwable e]
-      ((:error-fn ws-fns) ring-request-map ring-session e))
+      ((:on-error ws-fns do-nothing) this e))
     (onWebSocketText [^String message]
-      ((:text-fn ws-fns) ring-request-map (.getSession ^WebSocketAdapter this) ring-session message))
+      ((:on-text ws-fns do-nothing) this message))
     (onWebSocketClose [statusCode ^String reason]
       (proxy-super onWebSocketClose statusCode reason)
-      ((:close-fn ws-fns) ring-request-map ring-session statusCode reason))
+      ((:on-close ws-fns do-nothing) this))
     (onWebSocketBinary [^bytes payload offset len]
-      ((:binary-fn ws-fns) ring-request-map (.getSession ^WebSocketAdapter this)
-       ring-session payload offset len))))
+      ((:on-bytes ws-fns do-nothing) this payload offset len))))
 
 (defn- reify-ws-creator
   [ws-fns]
   (reify WebSocketCreator
-    (createWebSocket [this ^ServletUpgradeRequest upRequest ^ServletUpgradeResponse upResponse]
-      (let [ring-request-map (.getServletAttribute upRequest "ring-request-map")
-            handler (or (:create-fn ws-fns) (constantly {:status 200}))
-            {status :status ring-session :inner-session} (handler ring-request-map)]
-        (when (= status 200)
-          (proxy-ws-adapter ws-fns ring-request-map ring-session))))))
+    (createWebSocket [this _ _]
+      (proxy-ws-adapter ws-fns))))
 
 (defn- proxy-ws-handler
   "Returns a Jetty websocket handler"
@@ -50,11 +68,7 @@ Derived from ring.adapter.jetty"
     (configure [^WebSocketServletFactory factory]
       (-> (.getPolicy factory)
           (.setIdleTimeout (options :ws-max-idle-time 500000)))
-      (.setCreator factory (reify-ws-creator ws-fns)))
-    (handle [^java.lang.String target, ^org.eclipse.jetty.server.Request baseRequest, ^javax.servlet.http.HttpServletRequest request, ^javax.servlet.http.HttpServletResponse response]
-      (let [request-map (servlet/build-request-map request)]
-        (.setAttribute request "ring-request-map" request-map))
-      (proxy-super handle target baseRequest request response))))
+      (.setCreator factory (reify-ws-creator ws-fns)))))
 
 (defn- proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."
