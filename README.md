@@ -9,9 +9,19 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 `[info.sunng/ring-jetty9-adapter "0.6.0"]`
 
 ### Code
+
+In the REPL:
+
 ```clojure
-(use 'ring.adapter.jetty9)
+(require '[ring.adapter.jetty9 :refer [run-jetty]])
 (run-jetty app {:port 50505}) ;; same as the 'official' adapter of jetty 7
+```
+
+In ns declaration:
+
+```clojure
+(ns my.server
+  (:require [ring.adapter.jetty9 :refer [run-jetty]]))
 ```
 
 ### WebSocket
