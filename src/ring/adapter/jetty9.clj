@@ -3,7 +3,7 @@
 Derived from ring.adapter.jetty"
   (:import (org.eclipse.jetty.server
             Handler Server Request ServerConnector
-            HttpConfiguration HttpConnectionFactory SslConnectionFactory)
+            HttpConfiguration HttpConnectionFactory SslConnectionFactory ConnectionFactory)
            (org.eclipse.jetty.server.handler
             HandlerCollection AbstractHandler ContextHandler HandlerList)
            (org.eclipse.jetty.util.thread
@@ -122,18 +122,16 @@ Derived from ring.adapter.jetty"
         http-configuration (http-config options)
         http-connector (doto (ServerConnector.
                               ^Server server
-                              (into-array [(HttpConnectionFactory. http-configuration)]))
+                              (into-array ConnectionFactory [(HttpConnectionFactory. http-configuration)]))
                          (.setPort (options :port 80))
                          (.setHost (options :host))
                          (.setIdleTimeout (options :max-idle-time 200000)))
 
         https-connector (when (or (options :ssl?) (options :ssl-port))
                           (doto (ServerConnector.
-                                 server
-                                 (SslConnectionFactory.
-                                  (ssl-context-factory options)
-                                  "http/1.1")
-                                 (into-array [(HttpConnectionFactory. http-configuration)]))
+                                 ^Server server
+                                 (ssl-context-factory options)
+                                 (into-array ConnectionFactory [(HttpConnectionFactory. http-configuration)]))
                             (.setPort (options :ssl-port 443))
                             (.setHost (options :host))
                             (.setIdleTimeout (options :max-idle-time 200000))))
