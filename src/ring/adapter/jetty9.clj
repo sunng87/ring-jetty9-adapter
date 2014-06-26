@@ -101,10 +101,14 @@ Derived from ring.adapter.jetty"
       (.setKeyStorePath context (options :keystore))
       (.setKeyStore context ^java.security.KeyStore (options :keystore)))
     (.setKeyStorePassword context (options :key-password))
+    (when (options :keystore-type)
+      (.setKeyStoreType context (options :keystore-type)))
     (when (options :truststore)
       (.setTrustStore context ^java.security.KeyStore (options :truststore)))
     (when (options :trust-password)
       (.setTrustStorePassword context (options :trust-password)))
+    (when (options :truststore-type)
+      (.setTrustStoreType context (options :truststore-type)))
     (case (options :client-auth)
       :need (.setNeedClientAuth context true)
       :want (.setWantClientAuth context true)
@@ -154,8 +158,10 @@ supplied options:
 :ssl? - allow connections over HTTPS
 :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
 :keystore - the keystore to use for SSL connections
+:keystore-type - the format of keystore
 :key-password - the password to the keystore
 :truststore - a truststore to use for SSL connections
+:truststore-type - the format of trust store
 :trust-password - the password to the truststore
 :max-threads - the maximum number of threads to use (default 50)
 :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
