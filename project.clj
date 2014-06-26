@@ -10,4 +10,5 @@
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server "9.1.3.v20140225"]
                  [org.eclipse.jetty.websocket/websocket-server "9.1.3.v20140225"]
-                 [org.eclipse.jetty.websocket/websocket-servlet "9.1.3.v20140225"]])
+                 [org.eclipse.jetty.websocket/websocket-servlet "9.1.3.v20140225"]]
+  :deploy-repositories {"releases" :clojars})
