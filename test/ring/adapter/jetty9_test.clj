@@ -7,10 +7,12 @@
 
 (def websocket-handler
   {:on-connect (fn [ws])
-   :on-close (fn [ws])
+   :on-close (fn [ws status reason])
    :on-error (fn [ws e])
-   :on-text (fn [ws msg])
-   :on-byte (fn [ws bytes offset length])})
+   :on-text (fn [ws msg]
+              (send! ws msg))
+   :on-byte (fn [ws bytes offset length]
+              )})
 
 (deftest jetty9-test
   (is (run-jetty dummy-app {:port 50524
