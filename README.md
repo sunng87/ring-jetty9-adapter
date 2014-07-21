@@ -6,7 +6,7 @@ Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocke
 
 ### Leiningen
 
-`[info.sunng/ring-jetty9-adapter "0.6.1"]`
+![latest version on clojars](https://clojars.org/info.sunng/ring-jetty9-adapter/latest-version.svg)
 
 ### Code
 
@@ -31,18 +31,24 @@ You can define following handlers for websocket events.
 ```clojure
 (def ws-handler {:on-connect (fn [ws])
                  :on-error (fn [ws e])
-                 :on-close (fn [ws])
+                 :on-close (fn [ws status-code reason])
                  :on-text (fn [ws text-message])
                  :on-bytes (fn [ws bytes offset len])})
 ```
 
 WebSocketProtocol allows you to read and write data on the `ws` value:
 
-* (send-text ws ^String text)
-* (send-bytes ws ^ByteBuffer bytes)
-* (close ws)
+* (send! ws msg)
+* (close! ws)
 * (remote-addr ws)
-* (idle-timeout ws timeout)
+* (idle-timeout! ws timeout)
+
+Notice that we support different type of msg:
+
+* **byte[]** and **ByteBuffer**: send binary websocket message
+* **String** and other Object: send text websocket message
+* **(fn [ws])** (clojure function): Custom function you can operate on
+  Jetty's [RemoteEndpoint](http://download.eclipse.org/jetty/stable-9/apidocs/org/eclipse/jetty/websocket/api/RemoteEndpoint.html)
 
 There is a new option `:websockets` available. Accepting a map of context path and listener class:
 ```clojure
@@ -59,8 +65,16 @@ var ws = new WebSocket("ws://somehost/loc/");
 ws.onopen = ....
 ```
 
+## Contributors
+
+* [kristinarodgers](https://github.com/kristinarodgers)
+* [xtang](https://github.com/xtang)
+* [NoamB](https://github.com/NoamB)
+* [mpenet](https://github.com/mpenet)
+* [aesterline](https://github.com/aesterline)
+
 ## License
 
-Copyright © 2013 Sun Ning
+Copyright © 2013-2014 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
