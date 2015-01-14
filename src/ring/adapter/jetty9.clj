@@ -190,13 +190,20 @@ Derived from ring.adapter.jetty"
 (defn- create-server
   "Construct a Jetty Server instance."
   [{:as options
-    :keys [port max-threads daemon? max-idle-time host ssl? ssl-port]
+    :keys [port max-threads min-threads threadpool-idle-timeout job-queue
+           daemon? max-idle-time host ssl? ssl-port]
     :or {port 80
          max-threads 50
+         min-threads 8
+         threadpool-idle-timeout 60000
+         job-queue nil
          daemon? false
          max-idle-time 200000
          ssl? false}}]
-  (let [pool (doto (QueuedThreadPool. (int max-threads))
+  (let [pool (doto (QueuedThreadPool. (int max-threads)
+                                      (int min-threads)
+                                      (int threadpool-idle-timeout)
+                                      job-queue)
                (.setDaemon daemon?))
         server (doto (Server. pool)
                  (.addBean (ScheduledExecutorScheduler.)))
@@ -242,6 +249,9 @@ supplied options:
 :truststore-type - the format of trust store
 :trust-password - the password to the truststore
 :max-threads - the maximum number of threads to use (default 50)
+:min-threads - the minimum number of threads to use (default 8)
+:threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000)
+:job-queue - the job queue to be used by the Jetty threadpool (default is unbounded)
 :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
 :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
 :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
