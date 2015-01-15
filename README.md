@@ -72,6 +72,7 @@ ws.onopen = ....
 * [NoamB](https://github.com/NoamB)
 * [mpenet](https://github.com/mpenet)
 * [aesterline](https://github.com/aesterline)
+* [trptcolin](https://github.com/trptcolin)
 
 ## License
 
