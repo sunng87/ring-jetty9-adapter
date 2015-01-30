@@ -72,9 +72,10 @@ ws.onopen = ....
 * [NoamB](https://github.com/NoamB)
 * [mpenet](https://github.com/mpenet)
 * [aesterline](https://github.com/aesterline)
+* [trptcolin](https://github.com/trptcolin)
 
 ## License
 
-Copyright © 2013-2014 Sun Ning
+Copyright © 2013-2015 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
