@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [ring/ring-servlet "1.3.2"
                   :exclusions [javax.servlet/servlet-api]]
-                 [org.eclipse.jetty/jetty-server "9.2.7.v20150116"]
-                 [org.eclipse.jetty.websocket/websocket-server "9.2.7.v20150116"]
-                 [org.eclipse.jetty.websocket/websocket-servlet "9.2.7.v20150116"]]
+                 [org.eclipse.jetty/jetty-server "9.2.9.v20150224"]
+                 [org.eclipse.jetty.websocket/websocket-server "9.2.9.v20150224"]
+                 [org.eclipse.jetty.websocket/websocket-servlet "9.2.9.v20150224"]]
   :deploy-repositories {"releases" :clojars})
