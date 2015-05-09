@@ -288,3 +288,6 @@ supplied options:
     (when join?
       (.join s))
     s))
+
+(defn stop-server [^Server s]
+  (.stop s))
