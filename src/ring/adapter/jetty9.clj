@@ -13,7 +13,8 @@ Derived from ring.adapter.jetty"
            (org.eclipse.jetty.websocket.servlet WebSocketServletFactory WebSocketCreator ServletUpgradeRequest
                                                 ServletUpgradeResponse)
            (javax.servlet.http HttpServletRequest HttpServletResponse)
-           (org.eclipse.jetty.websocket.api WebSocketAdapter Session UpgradeRequest)
+           (org.eclipse.jetty.websocket.api WebSocketAdapter Session UpgradeRequest
+                                            RemoteEndpoint)
            (java.nio ByteBuffer)
            (clojure.lang IFn))
   (:require [ring.util.servlet :as servlet]
@@ -36,19 +37,20 @@ Derived from ring.adapter.jetty"
 
   ByteBuffer
   (-send! [bb ws]
-    (-> ws .getRemote (.sendBytes ^ByteBuffer bb)))
+    (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb)))
 
   String
   (-send! [s ws]
-    (-> ws .getRemote (.sendString ^String s)))
+    (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s)))
 
   IFn
   (-send! [f ws]
-    (-> ws .getRemote f))
+    (-> ^WebSocketAdapter ws .getRemote f))
 
   Object
   (-send! [this ws]
-    (-> ws .getRemote (.sendString (str this))))
+    (-> ^WebSocketAdapter ws .getRemote
+        (.sendString ^RemoteEndpoint (str this))))
 
   ;; "nil" could PING?
   ;; nil
@@ -79,14 +81,16 @@ Derived from ring.adapter.jetty"
          on-bytes do-nothing}}]
   (proxy [WebSocketAdapter] []
     (onWebSocketConnect [^Session session]
-      (proxy-super onWebSocketConnect session)
+      (let [^WebSocketAdapter this this]
+        (proxy-super onWebSocketConnect session))
       (on-connect this))
     (onWebSocketError [^Throwable e]
       (on-error this e))
     (onWebSocketText [^String message]
       (on-text this message))
     (onWebSocketClose [statusCode ^String reason]
-      (proxy-super onWebSocketClose statusCode reason)
+      (let [^WebSocketAdapter this this]
+        (proxy-super onWebSocketClose statusCode reason))
       (on-close this statusCode reason))
     (onWebSocketBinary [^bytes payload offset len]
       (on-bytes this payload offset len))))
@@ -219,7 +223,7 @@ Derived from ring.adapter.jetty"
         https-connector (when (or ssl? ssl-port)
                           (doto (ServerConnector.
                                  ^Server server
-                                 (ssl-context-factory options)
+                                 ^SslContextFactory(ssl-context-factory options)
                                  (into-array ConnectionFactory [(HttpConnectionFactory. http-configuration)]))
                             (.setPort ssl-port)
                             (.setHost host)

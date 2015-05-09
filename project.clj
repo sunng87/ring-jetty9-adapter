@@ -9,4 +9,5 @@
                  [org.eclipse.jetty/jetty-server "9.2.9.v20150224"]
                  [org.eclipse.jetty.websocket/websocket-server "9.2.9.v20150224"]
                  [org.eclipse.jetty.websocket/websocket-servlet "9.2.9.v20150224"]]
-  :deploy-repositories {"releases" :clojars})
+  :deploy-repositories {"releases" :clojars}
+  :global-vars {*warn-on-reflection* true})
