@@ -15,7 +15,7 @@ Derived from ring.adapter.jetty"
            (javax.servlet.http HttpServletRequest HttpServletResponse)
            (org.eclipse.jetty.websocket.api WebSocketAdapter Session UpgradeRequest
                                             RemoteEndpoint)
-           (org.eclipse.jetty.http2.server HTTP2CServerConnectionFactory)
+           (org.eclipse.jetty.http2.server HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory)
            (java.nio ByteBuffer)
            (clojure.lang IFn))
   (:require [ring.util.servlet :as servlet]
@@ -196,7 +196,7 @@ Derived from ring.adapter.jetty"
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port h2c?]
+           daemon? max-idle-time host ssl? ssl-port h2? h2c?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -226,11 +226,16 @@ Derived from ring.adapter.jetty"
                          (.setHost host)
                          (.setIdleTimeout max-idle-time))
 
+        secure-connection-factory [(HttpConnectionFactory. http-configuration)]
+        secure-connection-factory (if h2?
+                                    (conj secure-connection-factory
+                                          (HTTP2ServerConnectionFactory. http-configuration))
+                                    secure-connection-factory)
         https-connector (when (or ssl? ssl-port)
                           (doto (ServerConnector.
                                  ^Server server
                                  ^SslContextFactory(ssl-context-factory options)
-                                 (into-array ConnectionFactory [(HttpConnectionFactory. http-configuration)]))
+                                 (into-array ConnectionFactory secure-connection-factory))
                             (.setPort ssl-port)
                             (.setHost host)
                             (.setIdleTimeout max-idle-time)))
@@ -272,6 +277,7 @@ supplied options:
                 :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
                 :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
                 :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e
+:h2? - enable http2 protocol on secure socket port
 :h2c? - enable http2 clear text on plain socket port"
   [handler {:as options
             :keys [max-threads websockets configurator join?]
