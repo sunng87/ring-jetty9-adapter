@@ -8,6 +8,7 @@
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
-                 [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]]
+                 [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
+                 [org.eclipse.jetty.http2/http2-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true})

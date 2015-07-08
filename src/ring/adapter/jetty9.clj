@@ -15,6 +15,7 @@ Derived from ring.adapter.jetty"
            (javax.servlet.http HttpServletRequest HttpServletResponse)
            (org.eclipse.jetty.websocket.api WebSocketAdapter Session UpgradeRequest
                                             RemoteEndpoint)
+           (org.eclipse.jetty.http2.server HTTP2CServerConnectionFactory)
            (java.nio ByteBuffer)
            (clojure.lang IFn))
   (:require [ring.util.servlet :as servlet]
@@ -195,7 +196,7 @@ Derived from ring.adapter.jetty"
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port]
+           daemon? max-idle-time host ssl? ssl-port h2c?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -213,9 +214,14 @@ Derived from ring.adapter.jetty"
                  (.addBean (ScheduledExecutorScheduler.)))
 
         http-configuration (http-config options)
+        plain-connection-factories [(HttpConnectionFactory. http-configuration)]
+        plain-connection-factories (if h2c?
+                                     (conj plain-connection-factories
+                                           (HTTP2CServerConnectionFactory. http-configuration))
+                                     plain-connection-factories)
         http-connector (doto (ServerConnector.
                               ^Server server
-                              (into-array ConnectionFactory [(HttpConnectionFactory. http-configuration)]))
+                              (into-array ConnectionFactory plain-connection-factories))
                          (.setPort port)
                          (.setHost host)
                          (.setIdleTimeout max-idle-time))
@@ -265,7 +271,8 @@ supplied options:
                 :on-text   #(text-fn % %2 %3 %4)         ; ^Session ws-session message
                 :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
                 :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
-                :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e"
+                :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e
+:h2c? - enable http2 clear text on plain socket port"
   [handler {:as options
             :keys [max-threads websockets configurator join?]
             :or {max-threads 50
