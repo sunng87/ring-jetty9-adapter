@@ -1,6 +1,11 @@
 # ring-jetty9-adapter
 
-Ring adapter for Jetty 9 with WebSocket support which means you can use WebSocket in your Clojure application without pain.
+Ring adapter for Jetty 9 with WebSocket support which means you can
+use WebSocket in your Clojure application without pain.
+
+This is a simple and plain wrapper on Jetty 9. It doesn't introduce
+additional thread model or anything else (no unofficial ring variance,
+no core.async). You are free to add those on top of our base API.
 
 ## Usage
 
