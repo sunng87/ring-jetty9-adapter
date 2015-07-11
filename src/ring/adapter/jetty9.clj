@@ -1,23 +1,27 @@
 (ns ring.adapter.jetty9
   "Adapter for the Jetty 9 server, with websocket support.
-Derived from ring.adapter.jetty"
-  (:import (org.eclipse.jetty.server
+  Derived from ring.adapter.jetty"
+  (:import [org.eclipse.jetty.server
             Handler Server Request ServerConnector
-            HttpConfiguration HttpConnectionFactory SslConnectionFactory ConnectionFactory)
-           (org.eclipse.jetty.server.handler
-            HandlerCollection AbstractHandler ContextHandler HandlerList)
-           (org.eclipse.jetty.util.thread
-            QueuedThreadPool ScheduledExecutorScheduler)
-           (org.eclipse.jetty.util.ssl SslContextFactory)
-           (org.eclipse.jetty.websocket.server WebSocketHandler)
-           (org.eclipse.jetty.websocket.servlet WebSocketServletFactory WebSocketCreator ServletUpgradeRequest
-                                                ServletUpgradeResponse)
-           (javax.servlet.http HttpServletRequest HttpServletResponse)
-           (org.eclipse.jetty.websocket.api WebSocketAdapter Session UpgradeRequest
-                                            RemoteEndpoint)
-           (org.eclipse.jetty.http2.server HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory)
-           (java.nio ByteBuffer)
-           (clojure.lang IFn))
+            HttpConfiguration HttpConnectionFactory
+            SslConnectionFactory ConnectionFactory]
+           [org.eclipse.jetty.server.handler
+            HandlerCollection AbstractHandler ContextHandler HandlerList]
+           [org.eclipse.jetty.util.thread
+            QueuedThreadPool ScheduledExecutorScheduler]
+           [org.eclipse.jetty.util.ssl SslContextFactory]
+           [org.eclipse.jetty.websocket.server WebSocketHandler]
+           [org.eclipse.jetty.websocket.servlet
+            WebSocketServletFactory WebSocketCreator
+            ServletUpgradeRequest ServletUpgradeResponse]
+           [javax.servlet.http HttpServletRequest HttpServletResponse]
+           [org.eclipse.jetty.websocket.api
+            WebSocketAdapter Session
+            UpgradeRequest RemoteEndpoint]
+           [org.eclipse.jetty.http2.server
+            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
+           [java.nio ByteBuffer]
+           [clojure.lang IFn])
   (:require [ring.util.servlet :as servlet]
             [clojure.string :as string]))
 
@@ -25,7 +29,10 @@ Derived from ring.adapter.jetty"
   (send! [this msg])
   (close! [this])
   (remote-addr [this])
-  (idle-timeout! [this ms]))
+  (idle-timeout! [this ms])
+  (idle-timeout [this])
+  (content? [this])
+  (get-req [this]))
 
 (defprotocol WebSocketSend
   (-send! [x ws] "How to encode content sent to the WebSocket clients"))
@@ -59,6 +66,28 @@ Derived from ring.adapter.jetty"
 
   )
 
+(defprotocol RequestMapDecoder
+  (build-request-map [r]))
+
+(extend-protocol RequestMapDecoder
+  HttpServletRequest
+  (build-request-map [request]
+    (servlet/build-request-map request))
+
+  ;;ServletUpgradeRequest
+  UpgradeRequest
+  (build-request-map [request]
+    {:uri (.getPath (.getRequestURI request))
+     :query-string (.getQueryString request)
+     :origin (.getOrigin request)
+     :host (.getHost request)
+     :request-method (keyword (.toLowerCase (.getMethod request)))
+     :headers (reduce(fn [m [k v]]
+                       (assoc m (keyword
+                                 (string/lower-case k)) (string/join "," v)))
+                     {}
+                     (.getHeaders request))}))
+
 (extend-protocol WebSocketProtocol
   WebSocketAdapter
   (send! [this msg]
@@ -68,7 +97,13 @@ Derived from ring.adapter.jetty"
   (remote-addr [this]
     (.. this (getSession) (getRemoteAddress)))
   (idle-timeout! [this ms]
-    (.. this (getSession) (setIdleTimeout ^long ms))))
+    (.. this (getSession) (setIdleTimeout ^long ms)))
+  (idle-timeout [this]
+    (.. this (getSession) (getIdleTimeout)))
+  (content? [this]
+    (. this (isConnected)))
+  (get-req [this]
+    (build-request-map (.. this (getSession) (getUpgradeRequest)))))
 
 (defn- do-nothing [& args])
 
@@ -101,26 +136,6 @@ Derived from ring.adapter.jetty"
   (reify WebSocketCreator
     (createWebSocket [this _ _]
       (proxy-ws-adapter ws-fns))))
-
-(defprotocol RequestMapDecoder
-  (build-request-map [r]))
-
-(extend-protocol RequestMapDecoder
-  HttpServletRequest
-  (build-request-map [request]
-    (servlet/build-request-map request))
-
-  UpgradeRequest
-  (build-request-map [request]
-    {:uri (.getRequestURI request)
-     :query-string (.getQueryString request)
-     :origin (.getOrigin request)
-     :host (.getHost request)
-     :request-method (keyword (.toLowerCase (.getMethod request)))
-     :headers (reduce(fn [m [k v]]
-                 (assoc m (string/lower-case k) (string/join "," v)))
-               {}
-               (.getHeaders request))}))
 
 (defn- proxy-ws-handler
   "Returns a Jetty websocket handler"
@@ -249,38 +264,40 @@ Derived from ring.adapter.jetty"
     server))
 
 (defn ^Server run-jetty
-  "Start a Jetty webserver to serve the given handler according to the
-supplied options:
+  "
+  Start a Jetty webserver to serve the given handler according to the
+  supplied options:
 
-:port - the port to listen on (defaults to 80)
-:host - the hostname to listen on
-:join? - blocks the thread until server ends (defaults to true)
-:daemon? - use daemon threads (defaults to false)
-:ssl? - allow connections over HTTPS
-:ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
-:keystore - the keystore to use for SSL connections
-:keystore-type - the format of keystore
-:key-password - the password to the keystore
-:key-manager-password - the password for key manager
-:truststore - a truststore to use for SSL connections
-:truststore-type - the format of trust store
-:trust-password - the password to the truststore
-:max-threads - the maximum number of threads to use (default 50)
-:min-threads - the minimum number of threads to use (default 8)
-:threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000)
-:job-queue - the job queue to be used by the Jetty threadpool (default is unbounded)
-:max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
-:ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
-:client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
-:websockets - a map from context path to a map of handler fns:
+  :port - the port to listen on (defaults to 80)
+  :host - the hostname to listen on
+  :join? - blocks the thread until server ends (defaults to true)
+  :daemon? - use daemon threads (defaults to false)
+  :ssl? - allow connections over HTTPS
+  :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
+  :keystore - the keystore to use for SSL connections
+  :keystore-type - the format of keystore
+  :key-password - the password to the keystore
+  :key-manager-password - the password for key manager
+  :truststore - a truststore to use for SSL connections
+  :truststore-type - the format of trust store
+  :trust-password - the password to the truststore
+  :max-threads - the maximum number of threads to use (default 50)
+  :min-threads - the minimum number of threads to use (default 8)
+  :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000)
+  :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded)
+  :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
+  :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
+  :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
+  :websockets - a map from context path to a map of handler fns:
+  :h2? - enable http2 protocol on secure socket port
+  :h2c? - enable http2 clear text on plain socket port
 
- {\"/context\" {:on-connect #(create-fn %)                ; ^Session ws-session
+  {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session
                 :on-text   #(text-fn % %2 %3 %4)         ; ^Session ws-session message
                 :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
                 :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
                 :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e
-:h2? - enable http2 protocol on secure socket port
-:h2c? - enable http2 clear text on plain socket port"
+  "
   [handler {:as options
             :keys [max-threads websockets configurator join?]
             :or {max-threads 50
