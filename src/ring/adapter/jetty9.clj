@@ -74,7 +74,6 @@
   (build-request-map [request]
     (servlet/build-request-map request))
 
-  ;;ServletUpgradeRequest
   UpgradeRequest
   (build-request-map [request]
     {:uri (.getPath (.getRequestURI request))
