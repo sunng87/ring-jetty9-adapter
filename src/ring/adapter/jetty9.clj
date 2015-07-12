@@ -31,7 +31,7 @@
   (remote-addr [this])
   (idle-timeout! [this ms])
   (idle-timeout [this])
-  (content? [this])
+  (connected? [this])
   (get-req [this])
   (get-resp [this]))
 
@@ -100,7 +100,7 @@
     (.. this (getSession) (setIdleTimeout ^long ms)))
   (idle-timeout [this]
     (.. this (getSession) (getIdleTimeout)))
-  (content? [this]
+  (connected? [this]
     (. this (isConnected)))
   (get-req [this]
     (build-request-map (.. this (getSession) (getUpgradeRequest))))
