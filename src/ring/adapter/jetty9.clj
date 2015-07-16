@@ -30,7 +30,6 @@
   (close! [this])
   (remote-addr [this])
   (idle-timeout! [this ms])
-  (idle-timeout [this])
   (connected? [this])
   (get-req [this]))
 
@@ -97,8 +96,6 @@
     (.. this (getSession) (getRemoteAddress)))
   (idle-timeout! [this ms]
     (.. this (getSession) (setIdleTimeout ^long ms)))
-  (idle-timeout [this]
-    (.. this (getSession) (getIdleTimeout)))
   (connected? [this]
     (. this (isConnected)))
   (get-req [this]
