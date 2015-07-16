@@ -237,8 +237,7 @@
                          (.setHost host)
                          (.setIdleTimeout max-idle-time))
 
-        secure-connection-factory (list (HttpConnectionFactory. http-configuration))
-        ;;
+        secure-connection-factory [(HttpConnectionFactory. http-configuration)]
         secure-connection-factory (if h2?
                                     (conj secure-connection-factory
                                           (HTTP2ServerConnectionFactory. http-configuration))
