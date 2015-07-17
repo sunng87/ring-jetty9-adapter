@@ -12,7 +12,8 @@
            [org.eclipse.jetty.util.ssl SslContextFactory]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [org.eclipse.jetty.http2.server
-            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory])
+            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
+           [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory])
   (:require [ring.util.servlet :as servlet]
             [ring.adapter.jetty9.common :refer :all]
             [ring.adapter.jetty9.websocket :refer [proxy-ws-handler] :as ws]))
@@ -67,13 +68,15 @@
 (defn- ssl-context-factory
   "Creates a new SslContextFactory instance from a map of options."
   [{:as options
-    :keys [keystore keystore-type key-password client-auth
+    :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type]}]
   (let [context (SslContextFactory.)]
     (if (string? keystore)
       (.setKeyStorePath context keystore)
       (.setKeyStore context ^java.security.KeyStore keystore))
     (.setKeyStorePassword context key-password)
+    (when key-manager-password
+      (.setKeyManagerPassword context key-manager-password))
     (when keystore-type
       (.setKeyStoreType context keystore-type))
     (when truststore
@@ -124,8 +127,9 @@
 
         secure-connection-factory [(HttpConnectionFactory. http-configuration)]
         secure-connection-factory (if h2?
-                                    (conj secure-connection-factory
-                                          (HTTP2ServerConnectionFactory. http-configuration))
+                                    (-> secure-connection-factory
+                                        (conj (HTTP2ServerConnectionFactory. http-configuration))
+                                        (conj (ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")))
                                     secure-connection-factory)
         https-connector (when (or ssl? ssl-port)
                           (doto (ServerConnector.
@@ -137,7 +141,7 @@
                             (.setIdleTimeout max-idle-time)))
 
         connectors (if https-connector
-                     [http-connector https-connector]
+                     [https-connector http-connector]
                      [http-connector])
         connectors (into-array connectors)]
     (.setConnectors server connectors)

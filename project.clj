@@ -9,6 +9,17 @@
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
-                 [org.eclipse.jetty.http2/http2-server ~jetty-version]]
+                 [org.eclipse.jetty.http2/http2-server ~jetty-version]
+                 [org.eclipse.jetty.alpn/alpn-api "1.1.2.v20150522"]
+                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
-  :global-vars {*warn-on-reflection* true})
+  :global-vars {*warn-on-reflection* true}
+  :profiles {:example-jar {:source-paths ["examples/"]
+                           :main ^:skip-aot core
+                           :dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"]]
+                           :bootclasspath true}
+             :example2 {:source-paths ["examples/"]
+                        :main ^:skip-aot core
+                        :jvm-opts ["-Xbootclasspath/p:alpn-boot-8.1.3.v20150130.jar"]}
+             :uberjar {:aot :all
+                       :uberjar-name "server.jar"}})
