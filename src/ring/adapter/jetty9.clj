@@ -137,9 +137,9 @@
                             (.setHost host)
                             (.setIdleTimeout max-idle-time)))
 
-        connectors (if https-connector
-                     [https-connector http-connector]
-                     [http-connector])
+        connectors (concat
+                    (when https-connector [https-connector])
+                    [http-connector])
         connectors (into-array connectors)]
     (.setConnectors server connectors)
     server))
