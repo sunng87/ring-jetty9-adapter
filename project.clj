@@ -16,7 +16,8 @@
   :global-vars {*warn-on-reflection* true}
   :profiles {:example {:source-paths ["examples/"]
                        :main ^:skip-aot core
-                       :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"]]
-                       :plugins [[info.sunng/lein-bootclasspath-deps "0.1.1"]]}
+                       :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"
+                                            :prepend true]]
+                       :plugins [[info.sunng/lein-bootclasspath-deps "0.2.0"]]}
              :uberjar {:aot :all
                        :uberjar-name "server.jar"}})
