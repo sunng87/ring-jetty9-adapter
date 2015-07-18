@@ -113,11 +113,9 @@
                  (.addBean (ScheduledExecutorScheduler.)))
 
         http-configuration (http-config options)
-        plain-connection-factories [(HttpConnectionFactory. http-configuration)]
-        plain-connection-factories (if h2c?
-                                     (conj plain-connection-factories
-                                           (HTTP2CServerConnectionFactory. http-configuration))
-                                     plain-connection-factories)
+        plain-connection-factories (concat
+                                    (when h2c? [(HTTP2CServerConnectionFactory. http-configuration)])
+                                    [(HttpConnectionFactory. http-configuration)])
         http-connector (doto (ServerConnector.
                               ^Server server
                               (into-array ConnectionFactory plain-connection-factories))
@@ -125,12 +123,11 @@
                          (.setHost host)
                          (.setIdleTimeout max-idle-time))
 
-        secure-connection-factory [(HttpConnectionFactory. http-configuration)]
-        secure-connection-factory (if h2?
-                                    (-> secure-connection-factory
-                                        (conj (HTTP2ServerConnectionFactory. http-configuration))
-                                        (conj (ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")))
-                                    secure-connection-factory)
+        secure-connection-factory (concat
+                                   (when h2?
+                                     [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
+                                      (HTTP2ServerConnectionFactory. http-configuration)])
+                                   [(HttpConnectionFactory. http-configuration)])
         https-connector (when (or ssl? ssl-port)
                           (doto (ServerConnector.
                                  ^Server server

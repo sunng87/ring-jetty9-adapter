@@ -14,12 +14,9 @@
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
-  :profiles {:example-jar {:source-paths ["examples/"]
-                           :main ^:skip-aot core
-                           :dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"]]
-                           :bootclasspath true}
-             :example2 {:source-paths ["examples/"]
-                        :main ^:skip-aot core
-                        :jvm-opts ["-Xbootclasspath/p:alpn-boot-8.1.3.v20150130.jar"]}
+  :profiles {:example {:source-paths ["examples/"]
+                       :main ^:skip-aot core
+                       :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"]]
+                       :plugins [[info.sunng/lein-bootclasspath-deps "0.1.1"]]}
              :uberjar {:aot :all
                        :uberjar-name "server.jar"}})
