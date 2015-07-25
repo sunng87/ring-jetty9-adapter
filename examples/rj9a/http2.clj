@@ -1,4 +1,4 @@
-(ns core
+(ns rj9a.http2
   (:gen-class)
   (:require [ring.adapter.jetty9 :as jetty]))
 
