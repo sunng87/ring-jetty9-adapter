@@ -120,10 +120,10 @@
   (reify WebSocketCreator
     (createWebSocket [this req resp]
       (let [req-map (build-request-map req)
-            ws-fns (ws-creator-fn req-map)]
-        (if-let [{code :code msg :message} (:error resp)]
+            ws-results (ws-creator-fn req-map)]
+        (if-let [{code :code msg :message} (:error ws-results)]
           (.sendError resp code msg)
-          (proxy-ws-adapter ws-fns))))))
+          (proxy-ws-adapter ws-results))))))
 
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
@@ -137,4 +137,12 @@
       (.setCreator factory
                    (if (map? ws)
                      (reify-default-ws-creator ws)
-                     (reify-custom-ws-creator ws))))))
+                     (reify-custom-ws-creator ws))))
+    (handle [^String target, ^Request request req res]
+      (let [wsf (proxy-super getWebSocketFactory)]
+        (if (.isUpgradeRequest wsf req res)
+          (if (.acceptWebSocket wsf req res)
+            (.setHandled request true)
+            (when (.isCommitted res)
+              (.setHandled request true)))
+          (proxy-super handle target request req res))))))
