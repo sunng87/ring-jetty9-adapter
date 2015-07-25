@@ -18,4 +18,6 @@
                              :main ^:skip-aot rj9a.http2
                              :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"
                                                   :prepend true]]
-                             :plugins [[info.sunng/lein-bootclasspath-deps "0.2.0"]]}})
+                             :plugins [[info.sunng/lein-bootclasspath-deps "0.2.0"]]}
+             :example-websocket {:source-paths ["examples/"]
+                                 :main ^:skip-aot rj9a.websocket}})
