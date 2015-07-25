@@ -1,7 +1,6 @@
-# ring-jetty9-adapter
+# ring-jetty9-adapter (rj9a)
 
-Ring adapter for Jetty 9 with WebSocket support which means you can
-use WebSocket in your Clojure application without pain.
+Ring adapter for Jetty 9 with HTTP2 and WebSocket support.
 
 This is a simple and plain wrapper on Jetty 9. It doesn't introduce
 additional thread model or anything else (no unofficial ring variance,
@@ -70,6 +69,13 @@ var ws = new WebSocket("ws://somehost/loc/");
 ws.onopen = ....
 ```
 
+## Examples
+
+You can find examples in `examples` folder. To run example:
+
+* http2: `lein with-profile default,example-http2 run`
+* websocket: `lein with-profile default,example-websocket run`
+
 ## Contributors
 
 * [kristinarodgers](https://github.com/kristinarodgers)
@@ -78,6 +84,7 @@ ws.onopen = ....
 * [mpenet](https://github.com/mpenet)
 * [aesterline](https://github.com/aesterline)
 * [trptcolin](https://github.com/trptcolin)
+* [paomian](https://github.com/paomian)
 
 ## License
 
