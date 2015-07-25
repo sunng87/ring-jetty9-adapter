@@ -12,7 +12,8 @@
            [org.eclipse.jetty.util.ssl SslContextFactory]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [org.eclipse.jetty.http2.server
-            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory])
+            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
+           [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory])
   (:require [ring.util.servlet :as servlet]
             [ring.adapter.jetty9.common :refer :all]
             [ring.adapter.jetty9.websocket :refer [proxy-ws-handler] :as ws]))
@@ -67,13 +68,15 @@
 (defn- ssl-context-factory
   "Creates a new SslContextFactory instance from a map of options."
   [{:as options
-    :keys [keystore keystore-type key-password client-auth
+    :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type]}]
   (let [context (SslContextFactory.)]
     (if (string? keystore)
       (.setKeyStorePath context keystore)
       (.setKeyStore context ^java.security.KeyStore keystore))
     (.setKeyStorePassword context key-password)
+    (when key-manager-password
+      (.setKeyManagerPassword context key-manager-password))
     (when keystore-type
       (.setKeyStoreType context keystore-type))
     (when truststore
@@ -110,11 +113,9 @@
                  (.addBean (ScheduledExecutorScheduler.)))
 
         http-configuration (http-config options)
-        plain-connection-factories [(HttpConnectionFactory. http-configuration)]
-        plain-connection-factories (if h2c?
-                                     (conj plain-connection-factories
-                                           (HTTP2CServerConnectionFactory. http-configuration))
-                                     plain-connection-factories)
+        plain-connection-factories (concat
+                                    (when h2c? [(HTTP2CServerConnectionFactory. http-configuration)])
+                                    [(HttpConnectionFactory. http-configuration)])
         http-connector (doto (ServerConnector.
                               ^Server server
                               (into-array ConnectionFactory plain-connection-factories))
@@ -122,11 +123,11 @@
                          (.setHost host)
                          (.setIdleTimeout max-idle-time))
 
-        secure-connection-factory [(HttpConnectionFactory. http-configuration)]
-        secure-connection-factory (if h2?
-                                    (conj secure-connection-factory
-                                          (HTTP2ServerConnectionFactory. http-configuration))
-                                    secure-connection-factory)
+        secure-connection-factory (concat
+                                   (when h2?
+                                     [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
+                                      (HTTP2ServerConnectionFactory. http-configuration)])
+                                   [(HttpConnectionFactory. http-configuration)])
         https-connector (when (or ssl? ssl-port)
                           (doto (ServerConnector.
                                  ^Server server
@@ -136,9 +137,9 @@
                             (.setHost host)
                             (.setIdleTimeout max-idle-time)))
 
-        connectors (if https-connector
-                     [http-connector https-connector]
-                     [http-connector])
+        connectors (concat
+                    (when https-connector [https-connector])
+                    [http-connector])
         connectors (into-array connectors)]
     (.setConnectors server connectors)
     server))
@@ -169,14 +170,15 @@
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :websockets - a map from context path to a map of handler fns:
-  :h2? - enable http2 protocol on secure socket port
-  :h2c? - enable http2 clear text on plain socket port
-
   {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session
                 :on-text   #(text-fn % %2 %3 %4)         ; ^Session ws-session message
                 :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
                 :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
                 :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e
+  or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info)
+  :h2? - enable http2 protocol on secure socket port
+  :h2c? - enable http2 clear text on plain socket port
+
   "
   [handler {:as options
             :keys [max-threads websockets configurator join?]
