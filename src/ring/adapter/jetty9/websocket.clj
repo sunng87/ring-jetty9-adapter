@@ -109,19 +109,32 @@
     (onWebSocketBinary [^bytes payload offset len]
       (on-bytes this payload offset len))))
 
-(defn- reify-ws-creator
+(defn- reify-default-ws-creator
   [ws-fns]
   (reify WebSocketCreator
     (createWebSocket [this _ _]
       (proxy-ws-adapter ws-fns))))
 
+(defn- reify-custom-ws-creator
+  [ws-creator-fn]
+  (reify WebSocketCreator
+    (createWebSocket [this req resp]
+      (let [req-map (build-request-map req)
+            ws-fns (ws-creator-fn req-map)]
+        (if-let [{code :code msg :message} (:error resp)]
+          (.sendError resp code msg)
+          (proxy-ws-adapter ws-fns))))))
+
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
-  [ws-fns {:as options
-           :keys [ws-max-idle-time]
-           :or {ws-max-idle-time 500000}}]
+  [ws {:as options
+       :keys [ws-max-idle-time]
+       :or {ws-max-idle-time 500000}}]
   (proxy [WebSocketHandler] []
     (configure [^WebSocketServletFactory factory]
       (-> (.getPolicy factory)
           (.setIdleTimeout ws-max-idle-time))
-      (.setCreator factory (reify-ws-creator ws-fns)))))
+      (.setCreator factory
+                   (if (map? ws)
+                     (reify-default-ws-creator ws)
+                     (reify-custom-ws-creator ws))))))
