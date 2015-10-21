@@ -1,4 +1,4 @@
-(def jetty-version "9.3.1.v20150714")
+(def jetty-version "9.3.5.v20151012")
 (defproject info.sunng/ring-jetty9-adapter "0.9.2-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
   :url "http://github.com/getaroom/ring-jetty9-adapter"
@@ -16,7 +16,7 @@
   :global-vars {*warn-on-reflection* true}
   :profiles {:example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2
-                             :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.3.v20150130"
+                             :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.5.v20150921"
                                                   :prepend true]]
                              :plugins [[info.sunng/lein-bootclasspath-deps "0.2.0"]]}
              :example-websocket {:source-paths ["examples/"]
