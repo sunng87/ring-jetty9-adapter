@@ -73,7 +73,8 @@ ws.onopen = ....
 
 You can find examples in `examples` folder. To run example:
 
-* http2: `lein with-profile default,example-http2 run`
+* http2: `lein with-profile default,example-http2 run` (NOTE that your
+  will need JDK8 to run this example)
 * websocket: `lein with-profile default,example-websocket run`
 
 ## Contributors
@@ -88,6 +89,6 @@ You can find examples in `examples` folder. To run example:
 
 ## License
 
-Copyright © 2013-2015 Sun Ning
+Copyright © 2013-2016 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
