@@ -1,4 +1,4 @@
-(def jetty-version "9.3.10.v20160621")
+(def jetty-version "9.3.14.v20161028")
 (defproject info.sunng/ring-jetty9-adapter "0.9.6-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
   :url "http://github.com/getaroom/ring-jetty9-adapter"
@@ -10,7 +10,7 @@
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
-                 [org.eclipse.jetty.alpn/alpn-api "1.1.2.v20150522"]
+                 [org.eclipse.jetty.alpn/alpn-api "1.1.3.v20160715"]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
