@@ -11,6 +11,7 @@
             QueuedThreadPool ScheduledExecutorScheduler]
            [org.eclipse.jetty.util.ssl SslContextFactory]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
+           [javax.servlet AsyncContext]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory])
@@ -40,6 +41,21 @@
         (when response-map
           (servlet/update-servlet-response response response-map)
           (.setHandled base-request true))))))
+
+(defn ^:internal proxy-async-handler
+  "Returns an Jetty Handler implementation for the given Ring **async** handler."
+  [handler]
+  (proxy [AbstractHandler] []
+    (handle [_ ^Request base-request request response]
+      (let [^AsyncContext context (.startAsync request)]
+        (handler
+         (servlet/build-request-map request)
+         (fn [response-map]
+           (servlet/update-servlet-response response context response-map))
+         (fn [^Throwable exception]
+           (.sendError response 500 (.getMessage exception))
+           (.complete context)))
+        (.setHandled base-request true)))))
 
 (defn- http-config
   [{:as options
@@ -151,6 +167,7 @@
 
   :port - the port to listen on (defaults to 80)
   :host - the hostname to listen on
+  :async? - using Ring 1.6 async handler?
   :join? - blocks the thread until server ends (defaults to true)
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
@@ -181,12 +198,12 @@
 
   "
   [handler {:as options
-            :keys [max-threads websockets configurator join?]
+            :keys [max-threads websockets configurator join? async?]
             :or {max-threads 50
                  join? true}}]
   (let [^Server s (create-server options)
         ^QueuedThreadPool p (QueuedThreadPool. (int max-threads))
-        ring-app-handler (proxy-handler handler)
+        ring-app-handler (if async? (proxy-async-handler handler) (proxy-handler handler))
         ws-handlers (map (fn [[context-path handler]]
                            (doto (ContextHandler.)
                              (.setContextPath context-path)

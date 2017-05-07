@@ -4,7 +4,8 @@
   :url "http://github.com/getaroom/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[ring/ring-servlet "1.6.0"
+  :dependencies [[org.clojure/clojure "1.8.0"]
+                 [ring/ring-servlet "1.6.0"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
@@ -22,4 +23,6 @@
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
-                            :main ^:skip-aot rj9a.http}})
+                            :main ^:skip-aot rj9a.http}
+             :example-async {:source-paths ["examples/"]
+                             :main ^:skip-aot rj9a.async}})
