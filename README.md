@@ -6,6 +6,10 @@ This is a simple and plain wrapper on Jetty 9. It doesn't introduce
 additional thread model or anything else (no unofficial ring variance,
 no core.async). You are free to add those on top of our base API.
 
+As of Ring 1.6, the official Jetty adapter has been updated to Jetty
+9.2. However, rj9a tracks most recent Jetty release and offers
+additional features like http/2 and websocket.
+
 ## Usage
 
 ### Leiningen
@@ -18,7 +22,7 @@ In the REPL:
 
 ```clojure
 (require '[ring.adapter.jetty9 :refer [run-jetty]])
-(run-jetty app {:port 50505}) ;; same as the 'official' adapter of jetty 7
+(run-jetty app {:port 50505}) ;; same as the 'official' adapter
 ```
 
 In ns declaration:
@@ -26,6 +30,16 @@ In ns declaration:
 ```clojure
 (ns my.server
   (:require [ring.adapter.jetty9 :refer [run-jetty]]))
+```
+
+### Ring 1.6 async handler
+
+```clojure
+(require '[ring.adapter.jetty9 :refer [run-jetty]])
+
+(defn app [request send-response raise-error]
+  (send-response {:body "It works!"}))
+(run-jetty app {:port 50505 :async? true})
 ```
 
 ### WebSocket
@@ -73,6 +87,10 @@ ws.onopen = ....
 
 You can find examples in `examples` folder. To run example:
 
+* http: `lein with-profile default,example-http run` a very basic
+  example of ring handler
+* async: `lein with-profile default,example-async run` ring 1.6 async
+  handler example
 * http2: `lein with-profile default,example-http2 run` (NOTE that your
   will need JDK8 to run this example)
 * websocket: `lein with-profile default,example-websocket run`
