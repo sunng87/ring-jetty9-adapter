@@ -107,6 +107,6 @@ You can find examples in `examples` folder. To run example:
 
 ## License
 
-Copyright © 2013-2016 Sun Ning
+Copyright © 2013-2017 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
