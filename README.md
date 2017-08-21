@@ -83,6 +83,12 @@ var ws = new WebSocket("ws://somehost/loc/");
 ws.onopen = ....
 ```
 
+If you want to omit the trailing slash from your URLs (and not receive a redirect from Jetty), you can start the server like:
+```clojure
+(run-jetty app {:websockets {"/loc" ws-handler}
+                :allow-null-path-info true})
+```
+
 ## Examples
 
 You can find examples in `examples` folder. To run example:

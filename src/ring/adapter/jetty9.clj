@@ -198,8 +198,9 @@
 
   "
   [handler {:as options
-            :keys [max-threads websockets configurator join? async?]
+            :keys [max-threads websockets configurator join? async? allow-null-path-info]
             :or {max-threads 50
+                 allow-null-path-info false
                  join? true}}]
   (let [^Server s (create-server options)
         ^QueuedThreadPool p (QueuedThreadPool. (int max-threads))
@@ -207,6 +208,7 @@
         ws-handlers (map (fn [[context-path handler]]
                            (doto (ContextHandler.)
                              (.setContextPath context-path)
+                             (.setAllowNullPathInfo allow-null-path-info)
                              (.setHandler (proxy-ws-handler handler options))))
                          websockets)
         contexts (doto (HandlerList.)
