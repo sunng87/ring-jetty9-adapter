@@ -4,7 +4,8 @@
   (:import [org.eclipse.jetty.server
             Handler Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory
-            SslConnectionFactory ConnectionFactory]
+            SslConnectionFactory ConnectionFactory
+            ProxyConnectionFactory]
            [org.eclipse.jetty.server.handler
             HandlerCollection AbstractHandler ContextHandler HandlerList]
            [org.eclipse.jetty.util.thread
@@ -121,7 +122,7 @@
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port h2? h2c?]
+           daemon? max-idle-time host ssl? ssl-port h2? h2c? proxy?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -129,7 +130,8 @@
          job-queue nil
          daemon? false
          max-idle-time 200000
-         ssl? false}}]
+         ssl? false
+         proxy? false}}]
   (let [pool (doto (QueuedThreadPool. (int max-threads)
                                       (int min-threads)
                                       (int threadpool-idle-timeout)
@@ -141,6 +143,7 @@
         http-configuration (http-config options)
         plain-connection-factories (concat
                                     (when h2c? [(HTTP2CServerConnectionFactory. http-configuration)])
+                                    (when proxy? [(ProxyConnectionFactory.)])
                                     [(HttpConnectionFactory. http-configuration)])
         http-connector (doto (ServerConnector.
                               ^Server server
@@ -205,7 +208,7 @@
   or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info)
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
-
+  :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
   "
   [handler {:as options
             :keys [max-threads websockets configurator join? async? allow-null-path-info]
