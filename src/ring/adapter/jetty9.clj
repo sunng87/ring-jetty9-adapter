@@ -201,12 +201,12 @@
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :websockets - a map from context path to a map of handler fns:
-  {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session
+   {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session
                 :on-text   #(text-fn % %2 %3 %4)         ; ^Session ws-session message
                 :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
                 :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
                 :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e
-  or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info)
+   or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info)
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
   :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)

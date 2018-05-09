@@ -121,8 +121,9 @@
     (createWebSocket [this req resp]
       (let [req-map (build-request-map req)
             ws-results (ws-creator-fn req-map)]
-        (if-let [{code :code msg :message} (:error ws-results)]
-          (.sendError resp code msg)
+        (if-let [{:keys [code message headers]} (:error ws-results)]
+          (do (set-headers resp headers)
+              (.sendError resp code message))
           (proxy-ws-adapter ws-results))))))
 
 (defn ^:internal proxy-ws-handler
