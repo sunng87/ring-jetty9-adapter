@@ -4,7 +4,8 @@
   (:import [org.eclipse.jetty.server
             Handler Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory
-            SslConnectionFactory ConnectionFactory]
+            SslConnectionFactory ConnectionFactory
+            ProxyConnectionFactory]
            [org.eclipse.jetty.server.handler
             HandlerCollection AbstractHandler ContextHandler HandlerList]
            [org.eclipse.jetty.util.thread
@@ -129,9 +130,10 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
-(defn- http-connector [server http-configuration h2c? port host max-idle-time]
+(defn- http-connector [server http-configuration h2c? port host max-idle-time proxy?]
   (let [plain-connection-factories (cond-> [(HttpConnectionFactory. http-configuration)]
-                                     h2c? (concat [(HTTP2CServerConnectionFactory. http-configuration)]))]
+                                     h2c? (concat [(HTTP2CServerConnectionFactory. http-configuration)])
+                                     proxy? (concat [(ProxyConnectionFactory.)]))]
     (doto (ServerConnector.
             ^Server server
             (into-array ConnectionFactory plain-connection-factories))
@@ -143,7 +145,7 @@
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port h2? h2c? http?]
+           daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -152,7 +154,8 @@
          daemon? false
          max-idle-time 200000
          ssl? false
-         http? true}}]
+         http? true
+         proxy? false}}]
   {:pre [(or http? ssl? ssl-port)]}
   (let [pool (doto (QueuedThreadPool. (int max-threads)
                                       (int min-threads)
@@ -166,7 +169,7 @@
         connectors (cond-> []
                      ssl?  (conj (https-connector server http-configuration (ssl-context-factory options)
                                                   h2? ssl-port host max-idle-time))
-                     http? (conj (http-connector server http-configuration h2c? port host max-idle-time)))]
+                     http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?)))]
     (.setConnectors server (into-array connectors))
     server))
 
@@ -206,7 +209,7 @@
   or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info)
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
-
+  :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
   "
   [handler {:as options
             :keys [max-threads websockets configurator join? async? allow-null-path-info]
