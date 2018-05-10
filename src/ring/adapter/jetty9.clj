@@ -118,11 +118,34 @@
       nil)
     context))
 
+(defn- https-connector [server http-configuration ssl-context-factory h2? port host max-idle-time]
+  (let [secure-connection-factory (cond-> [(HttpConnectionFactory. http-configuration)]
+                                    h2? (concat [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
+                                                 (HTTP2ServerConnectionFactory. http-configuration)] ))]
+    (doto (ServerConnector.
+            ^Server server
+            ^SslContextFactory ssl-context-factory
+            (into-array ConnectionFactory secure-connection-factory))
+      (.setPort port)
+      (.setHost host)
+      (.setIdleTimeout max-idle-time))))
+
+(defn- http-connector [server http-configuration h2c? port host max-idle-time proxy?]
+  (let [plain-connection-factories (cond-> [(HttpConnectionFactory. http-configuration)]
+                                     h2c? (concat [(HTTP2CServerConnectionFactory. http-configuration)])
+                                     proxy? (concat [(ProxyConnectionFactory.)]))]
+    (doto (ServerConnector.
+            ^Server server
+            (into-array ConnectionFactory plain-connection-factories))
+      (.setPort port)
+      (.setHost host)
+      (.setIdleTimeout max-idle-time))))
+
 (defn- create-server
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port h2? h2c? proxy?]
+           daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -131,7 +154,9 @@
          daemon? false
          max-idle-time 200000
          ssl? false
+         http? true
          proxy? false}}]
+  {:pre [(or http? ssl? ssl-port)]}
   (let [pool (doto (QueuedThreadPool. (int max-threads)
                                       (int min-threads)
                                       (int threadpool-idle-timeout)
@@ -139,38 +164,13 @@
                (.setDaemon daemon?))
         server (doto (Server. pool)
                  (.addBean (ScheduledExecutorScheduler.)))
-
         http-configuration (http-config options)
-        plain-connection-factories (concat
-                                    (when h2c? [(HTTP2CServerConnectionFactory. http-configuration)])
-                                    (when proxy? [(ProxyConnectionFactory.)])
-                                    [(HttpConnectionFactory. http-configuration)])
-        http-connector (doto (ServerConnector.
-                              ^Server server
-                              (into-array ConnectionFactory plain-connection-factories))
-                         (.setPort port)
-                         (.setHost host)
-                         (.setIdleTimeout max-idle-time))
-
-        secure-connection-factory (concat
-                                   (when h2?
-                                     [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
-                                      (HTTP2ServerConnectionFactory. http-configuration)])
-                                   [(HttpConnectionFactory. http-configuration)])
-        https-connector (when (or ssl? ssl-port)
-                          (doto (ServerConnector.
-                                 ^Server server
-                                 ^SslContextFactory(ssl-context-factory options)
-                                 (into-array ConnectionFactory secure-connection-factory))
-                            (.setPort ssl-port)
-                            (.setHost host)
-                            (.setIdleTimeout max-idle-time)))
-
-        connectors (concat
-                    (when https-connector [https-connector])
-                    [http-connector])
-        connectors (into-array connectors)]
-    (.setConnectors server connectors)
+        ssl? (or ssl? ssl-port)
+        connectors (cond-> []
+                     ssl?  (conj (https-connector server http-configuration (ssl-context-factory options)
+                                                  h2? ssl-port host max-idle-time))
+                     http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?)))]
+    (.setConnectors server (into-array connectors))
     server))
 
 (defn ^Server run-jetty
@@ -178,6 +178,7 @@
   Start a Jetty webserver to serve the given handler according to the
   supplied options:
 
+  :http? - allow connections over HTTP
   :port - the port to listen on (defaults to 80)
   :host - the hostname to listen on
   :async? - using Ring 1.6 async handler?
