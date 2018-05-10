@@ -153,6 +153,7 @@
          max-idle-time 200000
          ssl? false
          http? true}}]
+  {:pre [(or http? ssl? ssl-port)]}
   (let [pool (doto (QueuedThreadPool. (int max-threads)
                                       (int min-threads)
                                       (int threadpool-idle-timeout)
