@@ -3,7 +3,7 @@
            [org.eclipse.jetty.server.handler AbstractHandler]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
-            UpgradeRequest RemoteEndpoint]
+            UpgradeRequest RemoteEndpoint WriteCallback]
            [org.eclipse.jetty.websocket.server WebSocketHandler]
            [org.eclipse.jetty.websocket.servlet
             WebSocketServletFactory WebSocketCreator
@@ -15,7 +15,7 @@
             [ring.util.servlet :as servlet]))
 
 (defprotocol WebSocketProtocol
-  (send! [this msg])
+  (send! [this msg] [this msg callback])
   (close! [this])
   (remote-addr [this])
   (idle-timeout! [this ms])
@@ -23,21 +23,38 @@
   (req-of [this]))
 
 (defprotocol WebSocketSend
-  (-send! [x ws] "How to encode content sent to the WebSocket clients"))
+  (-send! [x ws] [x ws callback] "How to encode content sent to the WebSocket clients"))
+
+(def ^:private no-op (constantly nil))
+
+(defn- write-callback
+  [{:keys [write-failed write-success]
+    :or {write-failed  no-op
+         write-success no-op}}]
+  (reify WriteCallback
+    (writeFailed [_ throwable]
+      (write-failed throwable))
+    (writeSuccess [_]
+      (write-success))))
 
 (extend-protocol WebSocketSend
-
   (Class/forName "[B")
   (-send! [ba ws]
     (-send! (ByteBuffer/wrap ba) ws))
+  (-send [ba ws callback]
+    (-send! (ByteBuffer/wrap ba) ws callback))
 
   ByteBuffer
   (-send! [bb ws]
     (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb)))
+  (-send! [bb ws callback]
+    (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb ^WriteCallback (write-callback callback))))
 
   String
   (-send! [s ws]
     (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s)))
+  (-send! [s ws callback]
+    (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s ^WriteCallback (write-callback callback))))
 
   IFn
   (-send! [f ws]
@@ -47,6 +64,9 @@
   (-send! [this ws]
     (-> ^WebSocketAdapter ws .getRemote
         (.sendString ^RemoteEndpoint (str this))))
+  (-send! [this ws callback]
+    (-> ^WebSocketAdapter ws .getRemote
+        (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback))))
 
   ;; "nil" could PING?
   ;; nil
@@ -72,6 +92,8 @@
   WebSocketAdapter
   (send! [this msg]
     (-send! msg this))
+  (send! [this msg callback]
+    (-send! msg this callback))
   (close! [this]
     (.. this (getSession) (close)))
   (remote-addr [this]
