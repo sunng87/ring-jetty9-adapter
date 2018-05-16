@@ -41,18 +41,20 @@
   (Class/forName "[B")
   (-send! [ba ws]
     (-send! (ByteBuffer/wrap ba) ws))
+  (-send [ba ws callback]
+    (-send! (ByteBuffer/wrap ba) ws callback))
 
   ByteBuffer
   (-send! [bb ws]
     (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb)))
   (-send! [bb ws callback]
-    (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb (write-callback callback))))
+    (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb ^WriteCallback (write-callback callback))))
 
   String
   (-send! [s ws]
     (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s)))
   (-send! [s ws callback]
-    (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s (write-callback callback))))
+    (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s ^WriteCallback (write-callback callback))))
 
   IFn
   (-send! [f ws]
@@ -64,7 +66,7 @@
         (.sendString ^RemoteEndpoint (str this))))
   (-send! [this ws callback]
     (-> ^WebSocketAdapter ws .getRemote
-        (.sendString ^RemoteEndpoint (str this) (write-callback callback))))
+        (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback))))
 
   ;; "nil" could PING?
   ;; nil
