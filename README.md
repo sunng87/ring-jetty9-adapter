@@ -72,7 +72,7 @@ Notice that we support different type of msg:
 A callback can also be specified for `send!`:
 
 ```clojure
-(send! ws msg {:on-failure (fn [throwable]) :on-success (fn [])})
+(send! ws msg {:write-failed (fn [throwable]) :write-success (fn [])})
 ```
 
  A callback is a map where `:on-failure` and `:on-success` are optional.
