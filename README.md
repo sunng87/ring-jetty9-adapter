@@ -57,6 +57,7 @@ You can define following handlers for websocket events.
 WebSocketProtocol allows you to read and write data on the `ws` value:
 
 * (send! ws msg)
+* (send! ws msg callback)
 * (close! ws)
 * (remote-addr ws)
 * (idle-timeout! ws timeout)
@@ -67,6 +68,14 @@ Notice that we support different type of msg:
 * **String** and other Object: send text websocket message
 * **(fn [ws])** (clojure function): Custom function you can operate on
   Jetty's [RemoteEndpoint](http://download.eclipse.org/jetty/stable-9/apidocs/org/eclipse/jetty/websocket/api/RemoteEndpoint.html)
+
+A callback can also be specified for `send!`:
+
+```clojure
+(send! ws msg {:on-failure (fn [throwable]) :on-success (fn [])})
+```
+
+ A callback is a map where `:on-failure` and `:on-success` are optional.
 
 There is a new option `:websockets` available. Accepting a map of context path and listener class:
 ```clojure
