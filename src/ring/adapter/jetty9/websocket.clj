@@ -39,34 +39,38 @@
 
 (extend-protocol WebSocketSend
   (Class/forName "[B")
-  (-send! [ba ws]
-    (-send! (ByteBuffer/wrap ba) ws))
-  (-send [ba ws callback]
-    (-send! (ByteBuffer/wrap ba) ws callback))
+  (-send!
+    ([ba ws]
+     (-send! (ByteBuffer/wrap ba) ws))
+    ([ba ws callback]
+     (-send! (ByteBuffer/wrap ba) ws callback)))
 
   ByteBuffer
-  (-send! [bb ws]
-    (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb)))
-  (-send! [bb ws callback]
-    (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb ^WriteCallback (write-callback callback))))
+  (-send!
+    ([bb ws]
+     (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb)))
+    ([bb ws callback]
+     (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb ^WriteCallback (write-callback callback)))))
 
   String
-  (-send! [s ws]
-    (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s)))
-  (-send! [s ws callback]
-    (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s ^WriteCallback (write-callback callback))))
+  (-send!
+    ([s ws]
+     (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s)))
+    ([s ws callback]
+     (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s ^WriteCallback (write-callback callback)))))
 
   IFn
   (-send! [f ws]
     (-> ^WebSocketAdapter ws .getRemote f))
 
   Object
-  (-send! [this ws]
-    (-> ^WebSocketAdapter ws .getRemote
-        (.sendString ^RemoteEndpoint (str this))))
-  (-send! [this ws callback]
-    (-> ^WebSocketAdapter ws .getRemote
-        (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback))))
+  (send!
+    ([this ws]
+     (-> ^WebSocketAdapter ws .getRemote
+         (.sendString ^RemoteEndpoint (str this))))
+    ([this ws callback]
+     (-> ^WebSocketAdapter ws .getRemote
+         (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback)))))
 
   ;; "nil" could PING?
   ;; nil
@@ -90,10 +94,11 @@
 
 (extend-protocol WebSocketProtocol
   WebSocketAdapter
-  (send! [this msg]
-    (-send! msg this))
-  (send! [this msg callback]
-    (-send! msg this callback))
+  (send!
+    ([this msg]
+     (-send! msg this))
+    ([this msg callback]
+     (-send! msg this callback)))
   (close! [this]
     (.. this (getSession) (close)))
   (remote-addr [this]
