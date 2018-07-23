@@ -13,6 +13,8 @@
            [org.eclipse.jetty.util.ssl SslContextFactory]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [javax.servlet AsyncContext]
+           [org.eclipse.jetty.http2
+            HTTP2Cipher]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory])
@@ -98,6 +100,7 @@
     :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type]}]
   (let [context (SslContextFactory.)]
+    (.setCipherComparator context HTTP2Cipher/COMPARATOR)
     (if (string? keystore)
       (.setKeyStorePath context keystore)
       (.setKeyStore context ^java.security.KeyStore keystore))
@@ -119,9 +122,9 @@
     context))
 
 (defn- https-connector [server http-configuration ssl-context-factory h2? port host max-idle-time]
-  (let [secure-connection-factory (cond-> [(HttpConnectionFactory. http-configuration)]
-                                    h2? (concat [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
-                                                 (HTTP2ServerConnectionFactory. http-configuration)] ))]
+  (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
+                                                     (HTTP2ServerConnectionFactory. http-configuration)])
+                                          [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
             ^Server server
             ^SslContextFactory ssl-context-factory

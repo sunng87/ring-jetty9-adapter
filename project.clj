@@ -12,7 +12,8 @@
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty.alpn/alpn-api "1.1.3.v20160715"]
-                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
+                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
+                 [org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :profiles {:example-http2 {:source-paths ["examples/"]
