@@ -12,15 +12,15 @@
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty.alpn/alpn-api "1.1.3.v20160715"]
-                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
-                 [org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]
+                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
-  :profiles {:example-http2 {:source-paths ["examples/"]
-                             :main ^:skip-aot rj9a.http2
-                             :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.11.v20170118"
-                                                  :prepend true]]
-                             :plugins [[info.sunng/lein-bootclasspath-deps "0.3.0"]]}
+  :profiles {:example-http2-openjdk8 {:source-paths ["examples/"]
+                                      :main ^:skip-aot rj9a.http2
+                                      :dependencies [[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]
+                                      :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.12.v20180117"
+                                                           :prepend true]]
+                                      :plugins [[info.sunng/lein-bootclasspath-deps "0.3.0"]]}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]

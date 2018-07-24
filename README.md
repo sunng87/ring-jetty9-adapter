@@ -106,8 +106,8 @@ You can find examples in `examples` folder. To run example:
   example of ring handler
 * async: `lein with-profile default,example-async run` ring 1.6 async
   handler example
-* http2: `lein with-profile default,example-http2 run` (NOTE that your
-  will need JDK8 to run this example)
+* http2: `lein with-profile default,example-http2-openjdk8 run` (NOTE that your
+  will need OpenJDK8 to run this example)
 * websocket: `lein with-profile default,example-websocket run`
 
 ## Contributors
