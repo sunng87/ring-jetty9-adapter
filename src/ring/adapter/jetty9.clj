@@ -101,6 +101,7 @@
            truststore trust-password truststore-type]}]
   (let [context (SslContextFactory.)]
     (.setCipherComparator context HTTP2Cipher/COMPARATOR)
+    (.setProvider context "Conscrypt")
     (if (string? keystore)
       (.setKeyStorePath context keystore)
       (.setKeyStore context ^java.security.KeyStore keystore))
@@ -122,7 +123,7 @@
     context))
 
 (defn- https-connector [server http-configuration ssl-context-factory h2? port host max-idle-time]
-  (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
+  (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,http/1.1")
                                                      (HTTP2ServerConnectionFactory. http-configuration)])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
