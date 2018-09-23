@@ -10,6 +10,10 @@ As of Ring 1.6, the official Jetty adapter has been updated to Jetty
 9.2. However, rj9a tracks most recent Jetty release and offers
 additional features like http/2 and websocket.
 
+From 0.12, we ship [conscrypt](https://conscrypt.org) TLS
+implementation by default, which offers better performance and
+compatibility. (Note that conscrypt only works on OpenJDK at the moment)
+
 ## Usage
 
 ### Leiningen
@@ -106,8 +110,8 @@ You can find examples in `examples` folder. To run example:
   example of ring handler
 * async: `lein with-profile default,example-async run` ring 1.6 async
   handler example
-* http2: `lein with-profile default,example-http2-openjdk8 run` (NOTE that your
-  will need OpenJDK8 to run this example)
+* http2: `lein with-profile default,example-http2-openjdk run` (NOTE that your
+  will need OpenJDK to run this example)
 * websocket: `lein with-profile default,example-websocket run`
 
 ## Contributors

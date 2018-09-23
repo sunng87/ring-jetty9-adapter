@@ -12,11 +12,11 @@
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]
-                 [org.conscrypt/conscrypt-openjdk "1.3.0" :classifier "linux-x86_64"]]
+                 [org.conscrypt/conscrypt-openjdk-uber "1.3.0"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
-  :profiles {:example-http2-openjdk8 {:source-paths ["examples/"]
-                                      :main ^:skip-aot rj9a.http2}
+  :profiles {:example-http2-openjdk {:source-paths ["examples/"]
+                                     :main ^:skip-aot rj9a.http2}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
