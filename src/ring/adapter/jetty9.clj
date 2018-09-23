@@ -98,9 +98,11 @@
   "Creates a new SslContextFactory instance from a map of options."
   [{:as options
     :keys [keystore keystore-type key-password client-auth key-manager-password
-           truststore trust-password truststore-type]}]
+           truststore trust-password truststore-type ssl-protocols]
+    :or {ssl-protocols ["TLSv1.3" "TLSv1.2"]}}]
   (let [context (SslContextFactory.)]
     (.setCipherComparator context HTTP2Cipher/COMPARATOR)
+    (.setProvider context "Conscrypt")
     (if (string? keystore)
       (.setKeyStorePath context keystore)
       (.setKeyStore context ^java.security.KeyStore keystore))
@@ -119,10 +121,12 @@
       :need (.setNeedClientAuth context true)
       :want (.setWantClientAuth context true)
       nil)
+    (when (not-empty ssl-protocols)
+      (.setIncludeProtocols context (into-array ^String ssl-protocols)))
     context))
 
 (defn- https-connector [server http-configuration ssl-context-factory h2? port host max-idle-time]
-  (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,h2-17,h2-14,http/1.1")
+  (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,http/1.1")
                                                      (HTTP2ServerConnectionFactory. http-configuration)])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
@@ -196,6 +200,7 @@
   :truststore - a truststore to use for SSL connections
   :truststore-type - the format of trust store
   :trust-password - the password to the truststore
+  :ssl-protocols - the ssl protocols to use, for example [\"TLSv1.3\" \"TLSv1.2\"]
   :max-threads - the maximum number of threads to use (default 50)
   :min-threads - the minimum number of threads to use (default 8)
   :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000)
