@@ -5,7 +5,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [ring/ring-servlet "1.6.3"
+                 [ring/ring-servlet "1.7.0"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
