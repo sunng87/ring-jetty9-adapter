@@ -12,7 +12,10 @@ additional features like http/2 and websocket.
 
 From 0.12, we ship [conscrypt](https://conscrypt.org) TLS
 implementation by default, which offers better performance and
-compatibility. (Note that conscrypt only works on OpenJDK at the moment)
+compatibility. If conscrypt is not available in your platform, you can
+still fallback to JDK implementation by excluding conscrypt
+dependencies and including OpenJDK8 or JDK9 dependencies. See example
+profiles in `project.clj` for detail.
 
 ## Usage
 
@@ -110,7 +113,7 @@ You can find examples in `examples` folder. To run example:
   example of ring handler
 * async: `lein with-profile default,example-async run` ring 1.6 async
   handler example
-* http2: `lein with-profile default,example-http2-openjdk run` (NOTE that your
+* http2: `lein with-profile default,example-http2 run` (NOTE that your
   will need OpenJDK to run this example)
 * websocket: `lein with-profile default,example-websocket run`
 

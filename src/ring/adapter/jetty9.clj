@@ -94,15 +94,24 @@
     (.setSendDateHeader send-date-header?)
     (.setHeaderCacheSize header-cache-size)))
 
+(defn- detect-ssl-provider []
+  (try
+    (Class/forName "org.conscrypt.Conscrypt")
+    "Conscrypt"
+    (catch Throwable _
+      ;; fallback to default jdk provider
+      nil)))
+
 (defn- ssl-context-factory
   "Creates a new SslContextFactory instance from a map of options."
   [{:as options
     :keys [keystore keystore-type key-password client-auth key-manager-password
-           truststore trust-password truststore-type ssl-protocols]
+           truststore trust-password truststore-type ssl-protocols ssl-provider]
     :or {ssl-protocols ["TLSv1.3" "TLSv1.2"]}}]
   (let [context (SslContextFactory.)]
     (.setCipherComparator context HTTP2Cipher/COMPARATOR)
-    (.setProvider context "Conscrypt")
+    (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
+      (.setProvider context ssl-provider))
     (if (string? keystore)
       (.setKeyStorePath context keystore)
       (.setKeyStore context ^java.security.KeyStore keystore))
@@ -200,7 +209,8 @@
   :truststore - a truststore to use for SSL connections
   :truststore-type - the format of trust store
   :trust-password - the password to the truststore
-  :ssl-protocols - the ssl protocols to use, for example [\"TLSv1.3\" \"TLSv1.2\"]
+  :ssl-protocols - the ssl protocols to use, default to [\"TLSv1.3\" \"TLSv1.2\"]
+  :ssl-provider - the ssl provider, default to \"Conscrypt\"
   :max-threads - the maximum number of threads to use (default 50)
   :min-threads - the minimum number of threads to use (default 8)
   :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000)
