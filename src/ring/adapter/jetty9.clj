@@ -231,16 +231,16 @@
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
   :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
-  :wrap-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`
+  :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   "
   [handler {:as options
             :keys [max-threads websockets configurator join? async?
-                   allow-null-path-info wrap-handler]
+                   allow-null-path-info wrap-jetty-handler]
             :or {allow-null-path-info false
                  join? true
-                 wrap-handler identity}}]
+                 wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
-        ring-app-handler (wrap-handler
+        ring-app-handler (wrap-jetty-handler
                           (if async? (proxy-async-handler handler) (proxy-handler handler)))
         ws-handlers (map (fn [[context-path handler]]
                            (doto (ContextHandler.)
