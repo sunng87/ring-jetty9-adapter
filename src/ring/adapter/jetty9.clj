@@ -161,7 +161,8 @@
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?]
+           daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?
+           thread-pool]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -173,11 +174,12 @@
          http? true
          proxy? false}}]
   {:pre [(or http? ssl? ssl-port)]}
-  (let [pool (doto (QueuedThreadPool. (int max-threads)
-                                      (int min-threads)
-                                      (int threadpool-idle-timeout)
-                                      job-queue)
-               (.setDaemon daemon?))
+  (let [pool (or thread-pool
+                 (doto (QueuedThreadPool. (int max-threads)
+                                          (int min-threads)
+                                          (int threadpool-idle-timeout)
+                                          job-queue)
+                   (.setDaemon daemon?)))
         server (doto (Server. pool)
                  (.addBean (ScheduledExecutorScheduler.)))
         http-configuration (http-config options)
@@ -211,10 +213,11 @@
   :trust-password - the password to the truststore
   :ssl-protocols - the ssl protocols to use, default to [\"TLSv1.3\" \"TLSv1.2\"]
   :ssl-provider - the ssl provider, default to \"Conscrypt\"
-  :max-threads - the maximum number of threads to use (default 50)
-  :min-threads - the minimum number of threads to use (default 8)
-  :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000)
-  :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded)
+  :thread-pool - the thread pool for Jetty workload
+  :max-threads - the maximum number of threads to use (default 50), ignored if `:thread-pool` provided
+  :min-threads - the minimum number of threads to use (default 8), ignored if `:thread-pool` provided
+  :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000), ignored if `:thread-pool` provided
+  :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded), ignored if `:thread-pool` provided
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
@@ -228,15 +231,17 @@
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
   :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
+  :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   "
   [handler {:as options
-            :keys [max-threads websockets configurator join? async? allow-null-path-info]
-            :or {max-threads 50
-                 allow-null-path-info false
-                 join? true}}]
+            :keys [max-threads websockets configurator join? async?
+                   allow-null-path-info wrap-jetty-handler]
+            :or {allow-null-path-info false
+                 join? true
+                 wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
-        ^QueuedThreadPool p (QueuedThreadPool. (int max-threads))
-        ring-app-handler (if async? (proxy-async-handler handler) (proxy-handler handler))
+        ring-app-handler (wrap-jetty-handler
+                          (if async? (proxy-async-handler handler) (proxy-handler handler)))
         ws-handlers (map (fn [[context-path handler]]
                            (doto (ContextHandler.)
                              (.setContextPath context-path)
