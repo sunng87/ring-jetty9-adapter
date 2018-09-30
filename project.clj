@@ -12,6 +12,7 @@
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
+                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]
                  [org.conscrypt/conscrypt-openjdk-uber "1.3.0"]]
   :deploy-repositories {"releases" :clojars}
