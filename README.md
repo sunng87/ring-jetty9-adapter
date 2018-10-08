@@ -49,6 +49,33 @@ In ns declaration:
 (run-jetty app {:port 50505 :async? true})
 ```
 
+### Use HTTP 1.1 Only
+
+If you use plain socket http 1.1 only, for example, behind an nginx
+with ssl off-loading, you can exclude HTTPs dependencies to reduce the
+uberjar size:
+
+```clojure
+:exclusions [org.eclipse.jetty/jetty-alpn-conscrypt-server
+             org.conscrypt/conscrypt-openjdk-uber]
+```
+
+### HTTP/2
+
+To enable HTTP/2 on cleartext and secure transport, you can simply add
+options to `run-jetty` like:
+
+```clojure
+(jetty/run-jetty dummy-app {:port 5000
+                            :h2c? true  ;; enable cleartext http/2
+                            :h2? true   ;; enable http/2
+                            :ssl? true  ;; ssl is required for http/2
+                            :ssl-port 5443
+                            :keystore "dev-resources/keystore.jks"
+                            :key-password "111111"
+                            :keystore-type "jks"})
+```
+
 ### WebSocket
 
 You can define following handlers for websocket events.
