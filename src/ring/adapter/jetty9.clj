@@ -47,11 +47,15 @@
   [handler]
   (proxy [AbstractHandler] []
     (handle [_ ^Request base-request request response]
-      (let [request-map (build-request-map request)
-            response-map (-> (handler request-map)
-                             normalize-response)]
-        (when response-map
-          (servlet/update-servlet-response response response-map)
+      (try
+        (let [request-map (build-request-map request)
+              response-map (-> (handler request-map)
+                               normalize-response)]
+          (when response-map
+            (servlet/update-servlet-response response response-map)))
+        (catch Throwable e
+          (.sendError response 500 (.getMessage e)))
+        (finally
           (.setHandled base-request true))))))
 
 (defn ^:internal proxy-async-handler
@@ -59,16 +63,18 @@
   [handler]
   (proxy [AbstractHandler] []
     (handle [_ ^Request base-request request response]
-      (let [^AsyncContext context (.startAsync request)]
-        (handler
-         (servlet/build-request-map request)
-         (fn [response-map]
-           (let [response-map (normalize-response response-map)]
-             (servlet/update-servlet-response response context response-map)))
-         (fn [^Throwable exception]
-           (.sendError response 500 (.getMessage exception))
-           (.complete context)))
-        (.setHandled base-request true)))))
+      (try
+        (let [^AsyncContext context (.startAsync request)]
+          (handler
+           (servlet/build-request-map request)
+           (fn [response-map]
+             (let [response-map (normalize-response response-map)]
+               (servlet/update-servlet-response response context response-map)))
+           (fn [^Throwable exception]
+             (.sendError response 500 (.getMessage exception))
+             (.complete context))))
+        (finally
+          (.setHandled base-request true))))))
 
 (defn- http-config
   [{:as options
