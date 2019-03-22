@@ -1,4 +1,4 @@
-(def jetty-version "9.4.13.v20181111")
+(def jetty-version "9.4.15.v20190215")
 
 (defproject info.sunng/ring-jetty9-adapter "0.12.3-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -14,7 +14,7 @@
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]
-                 [org.conscrypt/conscrypt-openjdk-uber "1.3.0"]]
+                 [org.conscrypt/conscrypt-openjdk-uber "2.0.0"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :profiles {:example-http2 {:source-paths ["examples/"]
