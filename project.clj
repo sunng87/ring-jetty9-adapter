@@ -1,4 +1,4 @@
-(def jetty-version "9.4.16.v20190411")
+(def jetty-version "9.4.18.v20190429")
 
 (defproject info.sunng/ring-jetty9-adapter "0.12.4-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -17,6 +17,7 @@
                  [org.conscrypt/conscrypt-openjdk-uber "2.1.0"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
+  :jvm-args ["-Xmx128m"]
   :profiles {:example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
              ;; for openjdk8
