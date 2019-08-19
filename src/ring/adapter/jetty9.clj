@@ -226,6 +226,7 @@
   :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded), ignored if `:thread-pool` provided
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
+  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536) 
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :websockets - a map from context path to a map of handler fns:
    {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session

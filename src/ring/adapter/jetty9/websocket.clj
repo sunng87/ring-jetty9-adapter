@@ -156,12 +156,15 @@
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
   [ws {:as options
-       :keys [ws-max-idle-time]
-       :or {ws-max-idle-time 500000}}]
+       :keys [ws-max-idle-time 
+              ws-max-text-message-size]
+       :or {ws-max-idle-time 500000
+            ws-max-text-message-size 65536}}]
   (proxy [WebSocketHandler] []
     (configure [^WebSocketServletFactory factory]
-      (-> (.getPolicy factory)
-          (.setIdleTimeout ws-max-idle-time))
+      (doto (.getPolicy factory)
+        (.setIdleTimeout ws-max-idle-time)
+        (.setMaxTextMessageSize ws-max-text-message-size))
       (.setCreator factory
                    (if (map? ws)
                      (reify-default-ws-creator ws)
