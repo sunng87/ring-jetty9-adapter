@@ -14,7 +14,7 @@
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]
-                 [org.conscrypt/conscrypt-openjdk-uber "2.1.0"]]
+                 [org.conscrypt/conscrypt-openjdk-uber "2.2.1"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
