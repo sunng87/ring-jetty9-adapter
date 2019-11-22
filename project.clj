@@ -1,11 +1,11 @@
-(def jetty-version "9.4.20.v20190813")
+(def jetty-version "9.4.24.v20191120")
 
 (defproject info.sunng/ring-jetty9-adapter "0.12.6-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.1"]
                  [ring/ring-servlet "1.7.0"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
@@ -13,8 +13,8 @@
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
-                 [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]
-                 [org.conscrypt/conscrypt-openjdk-uber "2.2.1"]]
+                 [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version :exclusions [[org.conscrypt/conscrypt-openjdk-uber]]]
+                 [org.conscrypt/conscrypt-openjdk "2.4.0-SNAPSHOT" :classifier "linux-x86_64"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
@@ -23,7 +23,7 @@
              ;; for openjdk8
              :example-http2-openjdk8 {:source-paths ["examples/"]
                                       :main ^:skip-aot rj9a.http2
-                                      :dependencies ^:replace [[org.clojure/clojure "1.9.0"]
+                                      :dependencies ^:replace [[org.clojure/clojure "1.10.1"]
                                                                [ring/ring-servlet "1.7.0"
                                                                 :exclusions [javax.servlet/servlet-api]]
                                                                [org.eclipse.jetty/jetty-server ~jetty-version]
@@ -40,7 +40,7 @@
              ;; for jdk9+
              :example-http2-jdk9 {:source-paths ["examples/"]
                                   :main ^:skip-aot rj9a.http2
-                                  :dependencies ^:replace [[org.clojure/clojure "1.9.0"]
+                                  :dependencies ^:replace [[org.clojure/clojure "1.10.1"]
                                                            [ring/ring-servlet "1.7.0"
                                                             :exclusions [javax.servlet/servlet-api]]
                                                            [org.eclipse.jetty/jetty-server ~jetty-version]
