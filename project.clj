@@ -1,4 +1,4 @@
-(def jetty-version "9.4.24.v20191120")
+(def jetty-version "9.4.27.v20200227")
 
 (defproject info.sunng/ring-jetty9-adapter "0.12.6-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -6,7 +6,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [ring/ring-servlet "1.7.0"
+                 [ring/ring-servlet "1.8.0"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
@@ -14,7 +14,7 @@
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version :exclusions [[org.conscrypt/conscrypt-openjdk-uber]]]
-                 [org.conscrypt/conscrypt-openjdk "2.4.0-SNAPSHOT" :classifier "linux-x86_64"]]
+                 [org.conscrypt/conscrypt-openjdk "2.4.0" :classifier "linux-x86_64"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
