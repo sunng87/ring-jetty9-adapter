@@ -87,8 +87,7 @@
      :host (.getHost request)
      :request-method (keyword (.toLowerCase (.getMethod request)))
      :headers (reduce(fn [m [k v]]
-                       (assoc m (keyword
-                                 (string/lower-case k)) (string/join "," v)))
+                       (assoc m (string/lower-case k) (string/join "," v)))
                      {}
                      (.getHeaders request))}))
 
