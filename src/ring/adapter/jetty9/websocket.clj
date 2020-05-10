@@ -79,17 +79,13 @@
   )
 
 (extend-protocol RequestMapDecoder
-  UpgradeRequest
+  ServletUpgradeRequest
   (build-request-map [request]
-    {:uri (.getPath (.getRequestURI request))
-     :query-string (.getQueryString request)
-     :origin (.getOrigin request)
-     :host (.getHost request)
-     :request-method (keyword (.toLowerCase (.getMethod request)))
-     :headers (reduce(fn [m [k v]]
-                       (assoc m (string/lower-case k) (string/join "," v)))
-                     {}
-                     (.getHeaders request))}))
+    (let [servlet-request (.getHttpServletRequest request)
+          base-request-map (servlet/build-request-map servlet-request)]
+      (assoc base-request-map
+             :websocket-subprotocols (.getSubProtocols request)
+             :websocket-extensions (.getExtensions request)))))
 
 (extend-protocol WebSocketProtocol
   WebSocketAdapter
@@ -155,7 +151,7 @@
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
   [ws {:as options
-       :keys [ws-max-idle-time 
+       :keys [ws-max-idle-time
               ws-max-text-message-size]
        :or {ws-max-idle-time 500000
             ws-max-text-message-size 65536}}]
