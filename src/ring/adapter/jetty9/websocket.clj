@@ -9,7 +9,8 @@
             WebSocketServletFactory WebSocketCreator
             ServletUpgradeRequest ServletUpgradeResponse]
            [clojure.lang IFn]
-           [java.nio ByteBuffer])
+           [java.nio ByteBuffer]
+           [java.util Locale])
   (:require [ring.adapter.jetty9.common :refer :all]
             [clojure.string :as string]
             [ring.util.servlet :as servlet]))
@@ -82,10 +83,20 @@
   ServletUpgradeRequest
   (build-request-map [request]
     (let [servlet-request (.getHttpServletRequest request)
-          base-request-map (servlet/build-request-map servlet-request)]
+          base-request-map {:server-port (.getServerPort servlet-request)
+                            :server-name (.getServerName servlet-request)
+                            :remote-addr (.getRemoteAddr servlet-request)
+                            :uri (.getRequestURI servlet-request)
+                            :query-string (.getQueryString servlet-request)
+                            :scheme (keyword (.getScheme servlet-request))
+                            :request-method (keyword (.toLowerCase (.getMethod servlet-request) Locale/ENGLISH))
+                            :protocol (.getProtocol servlet-request)
+                            :headers (get-headers servlet-request)
+                            :ssl-client-cert (first (.getAttribute servlet-request
+                                                                   "javax.servlet.request.X509Certificate"))}]
       (assoc base-request-map
-             :websocket-subprotocols (.getSubProtocols request)
-             :websocket-extensions (.getExtensions request)))))
+             :websocket-subprotocols (into [] (.getSubProtocols request))
+             :websocket-extensions (into [] (.getExtensions request))))))
 
 (extend-protocol WebSocketProtocol
   WebSocketAdapter

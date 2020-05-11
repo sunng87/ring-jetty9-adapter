@@ -1,5 +1,7 @@
 (ns ring.adapter.jetty9.common
-  (:import [javax.servlet.http HttpServletResponse]))
+  (:require [clojure.string :as string])
+  (:import [javax.servlet.http HttpServletRequest HttpServletResponse]
+           [java.util Locale]))
 
 (defprotocol RequestMapDecoder
   (build-request-map [r]))
@@ -15,3 +17,16 @@
   ; Some headers must be set through specific methods
   (when-let [content-type (get headers "Content-Type")]
     (.setContentType response content-type)))
+
+(defn get-headers
+  "Creates a name/value map of all the request headers."
+  [^HttpServletRequest request]
+  (reduce
+    (fn [headers, ^String name]
+      (assoc headers
+        (.toLowerCase name Locale/ENGLISH)
+        (->> (.getHeaders request name)
+             (enumeration-seq)
+             (string/join ","))))
+    {}
+    (enumeration-seq (.getHeaderNames request))))

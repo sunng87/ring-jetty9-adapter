@@ -7,6 +7,7 @@
 (def echo-handler {:on-text (fn [ws text] (jetty/send! ws text))})
 
 (defn websocket-accept [req]
+  (println req)
   echo-handler)
 
 (defn websocket-reject [req]
