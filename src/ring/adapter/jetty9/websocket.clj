@@ -9,7 +9,8 @@
             WebSocketServletFactory WebSocketCreator
             ServletUpgradeRequest ServletUpgradeResponse]
            [clojure.lang IFn]
-           [java.nio ByteBuffer])
+           [java.nio ByteBuffer]
+           [java.util Locale])
   (:require [ring.adapter.jetty9.common :refer :all]
             [clojure.string :as string]
             [ring.util.servlet :as servlet]))
@@ -79,17 +80,23 @@
   )
 
 (extend-protocol RequestMapDecoder
-  UpgradeRequest
+  ServletUpgradeRequest
   (build-request-map [request]
-    {:uri (.getPath (.getRequestURI request))
-     :query-string (.getQueryString request)
-     :origin (.getOrigin request)
-     :host (.getHost request)
-     :request-method (keyword (.toLowerCase (.getMethod request)))
-     :headers (reduce(fn [m [k v]]
-                       (assoc m (string/lower-case k) (string/join "," v)))
-                     {}
-                     (.getHeaders request))}))
+    (let [servlet-request (.getHttpServletRequest request)
+          base-request-map {:server-port (.getServerPort servlet-request)
+                            :server-name (.getServerName servlet-request)
+                            :remote-addr (.getRemoteAddr servlet-request)
+                            :uri (.getRequestURI servlet-request)
+                            :query-string (.getQueryString servlet-request)
+                            :scheme (keyword (.getScheme servlet-request))
+                            :request-method (keyword (.toLowerCase (.getMethod servlet-request) Locale/ENGLISH))
+                            :protocol (.getProtocol servlet-request)
+                            :headers (get-headers servlet-request)
+                            :ssl-client-cert (first (.getAttribute servlet-request
+                                                                   "javax.servlet.request.X509Certificate"))}]
+      (assoc base-request-map
+             :websocket-subprotocols (into [] (.getSubProtocols request))
+             :websocket-extensions (into [] (.getExtensions request))))))
 
 (extend-protocol WebSocketProtocol
   WebSocketAdapter
@@ -155,7 +162,7 @@
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
   [ws {:as options
-       :keys [ws-max-idle-time 
+       :keys [ws-max-idle-time
               ws-max-text-message-size]
        :or {ws-max-idle-time 500000
             ws-max-text-message-size 65536}}]
