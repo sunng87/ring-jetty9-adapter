@@ -8,7 +8,8 @@
 
 (defn websocket-accept [req]
   (println req)
-  echo-handler)
+  (assoc echo-handler
+         :subprotocol (first (:websocket-subprotocols req))))
 
 (defn websocket-reject [req]
   {:error {:code 403 :message "Forbidden"}})

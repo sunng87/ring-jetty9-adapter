@@ -1,9 +1,10 @@
 (ns ring.adapter.jetty9.websocket
-  (:import [org.eclipse.jetty.server Request]
+  (:import [org.eclipse.jetty.server Request Response]
            [org.eclipse.jetty.server.handler AbstractHandler]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
             UpgradeRequest RemoteEndpoint WriteCallback]
+           [org.eclipse.jetty.websocket.api.extensions ExtensionConfig]
            [org.eclipse.jetty.websocket.server WebSocketHandler]
            [org.eclipse.jetty.websocket.servlet
             WebSocketServletFactory WebSocketCreator
@@ -157,7 +158,12 @@
         (if-let [{:keys [code message headers]} (:error ws-results)]
           (do (set-headers resp headers)
               (.sendError resp code message))
-          (proxy-ws-adapter ws-results))))))
+          (do
+            (when-let [sp (:subprotocol ws-results)]
+              (.setAcceptedSubProtocol resp sp))
+            (when-let [exts (:extensions ws-results)]
+              (.setExtensions resp (mapv #(ExtensionConfig. ^String %) exts)))
+            (proxy-ws-adapter ws-results)))))))
 
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
@@ -175,7 +181,7 @@
                    (if (map? ws)
                      (reify-default-ws-creator ws)
                      (reify-custom-ws-creator ws))))
-    (handle [^String target, ^Request request req res]
+    (handle [^String target, ^Request request req ^Response res]
       (let [wsf (proxy-super getWebSocketFactory)]
         (if (.isUpgradeRequest wsf req res)
           (if (.acceptWebSocket wsf req res)
