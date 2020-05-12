@@ -161,7 +161,7 @@
           (do
             (when-let [sp (:subprotocol ws-results)]
               (.setAcceptedSubProtocol resp sp))
-            (when-let [exts (:extensions ws-results)]
+            (when-let [exts (not-empty (:extensions ws-results))]
               (.setExtensions resp (mapv #(ExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
