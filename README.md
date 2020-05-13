@@ -132,6 +132,16 @@ If you want to omit the trailing slash from your URLs (and not receive a redirec
                 :allow-null-path-info true})
 ```
 
+### Websocket Handshake
+
+Sometimes you may have a negotiation with the websocket client on the
+handshake (upgrade request) phase. You can define a ring like function
+that returns the websocket handler, or raises an error. You may also
+select a subprotocol from `(:subprotocol request)` and configure
+available `(:extensions request)`. See [websocket
+example](https://github.com/sunng87/ring-jetty9-adapter/blob/master/examples/rj9a/websocket.clj)
+for detail.
+
 ## Examples
 
 You can find examples in `examples` folder. To run example:
