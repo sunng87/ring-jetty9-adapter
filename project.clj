@@ -41,7 +41,7 @@
              :example-http2-jdk9 {:source-paths ["examples/"]
                                   :main ^:skip-aot rj9a.http2
                                   :dependencies ^:replace [[org.clojure/clojure "1.10.1"]
-                                                           [ring/ring-servlet "1.8.0"
+                                                           [ring/ring-servlet "1.8.1"
                                                             :exclusions [javax.servlet/servlet-api]]
                                                            [org.eclipse.jetty/jetty-server ~jetty-version]
                                                            [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
