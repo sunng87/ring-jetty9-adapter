@@ -11,8 +11,7 @@
    :on-error (fn [ws e])
    :on-text (fn [ws msg]
               (send! ws msg))
-   :on-byte (fn [ws bytes offset length]
-              )})
+   :on-byte (fn [ws bytes offset length])})
 
 (deftest jetty9-test
   (is (run-jetty dummy-app {:port 50524

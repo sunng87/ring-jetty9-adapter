@@ -11,7 +11,7 @@
             ServletUpgradeRequest ServletUpgradeResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
-           [java.util Locale])
+           [java.util Locale Map])
   (:require [ring.adapter.jetty9.common :refer :all]
             [clojure.string :as string]
             [ring.util.servlet :as servlet]))
@@ -119,6 +119,9 @@
 
 (defn- do-nothing [& args])
 
+(defprotocol IWebSocketAdapter
+  (ws-adapter [this]))
+
 (defn- proxy-ws-adapter
   [{:as ws-fns
     :keys [on-connect on-error on-text on-close on-bytes]
@@ -143,11 +146,20 @@
     (onWebSocketBinary [^bytes payload offset len]
       (on-bytes this payload offset len))))
 
+(extend-protocol IWebSocketAdapter
+  Map
+  (ws-adapter [this]
+    (proxy-ws-adapter this))
+
+  WebSocketAdapter
+  (ws-adapter [this]
+   this))
+
 (defn- reify-default-ws-creator
-  [ws-fns]
+  [ws]
   (reify WebSocketCreator
     (createWebSocket [this _ _]
-      (proxy-ws-adapter ws-fns))))
+      (ws-adapter ws))))
 
 (defn- reify-custom-ws-creator
   [ws-creator-fn]
@@ -163,7 +175,7 @@
               (.setAcceptedSubProtocol resp sp))
             (when-let [exts (not-empty (:extensions ws-results))]
               (.setExtensions resp (mapv #(ExtensionConfig. ^String %) exts)))
-            (proxy-ws-adapter ws-results)))))))
+            (ws-adapter ws-results)))))))
 
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
@@ -178,11 +190,12 @@
         (.setIdleTimeout ws-max-idle-time)
         (.setMaxTextMessageSize ws-max-text-message-size))
       (.setCreator factory
-                   (if (map? ws)
-                     (reify-default-ws-creator ws)
-                     (reify-custom-ws-creator ws))))
+                   (if (fn? ws)
+                     (reify-custom-ws-creator ws)
+                     (reify-default-ws-creator ws))))
     (handle [^String target, ^Request request req ^Response res]
-      (let [wsf (proxy-super getWebSocketFactory)]
+      (let [^WebSocketHandler this this
+            ^WebSocketServletFactory wsf (proxy-super getWebSocketFactory)]
         (if (.isUpgradeRequest wsf req res)
           (if (.acceptWebSocket wsf req res)
             (.setHandled request true)

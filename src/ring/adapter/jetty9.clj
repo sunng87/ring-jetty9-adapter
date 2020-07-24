@@ -9,7 +9,7 @@
            [org.eclipse.jetty.server.handler
             HandlerCollection AbstractHandler ContextHandler HandlerList]
            [org.eclipse.jetty.util.thread
-            QueuedThreadPool ScheduledExecutorScheduler]
+            QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [javax.servlet AsyncContext]
@@ -46,7 +46,7 @@
   "Returns an Jetty Handler implementation for the given Ring handler."
   [handler]
   (proxy [AbstractHandler] []
-    (handle [_ ^Request base-request request response]
+    (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
       (try
         (let [request-map (build-request-map request)
               response-map (-> (handler request-map)
@@ -62,7 +62,7 @@
   "Returns an Jetty Handler implementation for the given Ring **async** handler."
   [handler]
   (proxy [AbstractHandler] []
-    (handle [_ ^Request base-request request response]
+    (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
       (try
         (let [^AsyncContext context (.startAsync request)]
           (handler
@@ -186,7 +186,7 @@
                                           (int threadpool-idle-timeout)
                                           job-queue)
                    (.setDaemon daemon?)))
-        server (doto (Server. pool)
+        server (doto (Server. ^ThreadPool pool)
                  (.addBean (ScheduledExecutorScheduler.)))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
