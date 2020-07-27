@@ -122,7 +122,7 @@
 (defprotocol IWebSocketAdapter
   (ws-adapter [this]))
 
-(defn- proxy-ws-adapter
+(defn proxy-ws-adapter
   [{:as ws-fns
     :keys [on-connect on-error on-text on-close on-bytes]
     :or {on-connect do-nothing
