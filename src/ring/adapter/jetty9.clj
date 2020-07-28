@@ -110,38 +110,44 @@
       nil)))
 
 (defn- ^SslContextFactory$Server ssl-context-factory
-  [options]
+  [{:as options
+    :keys [keystore keystore-type key-password client-auth key-manager-password
+           truststore trust-password truststore-type ssl-protocols ssl-provider
+           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]
+    :or {ssl-protocols ["TLSv1.3" "TLSv1.2"]}}]
   (let [context-server (SslContextFactory$Server.)]
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
-    (let [ssl-provider (or (options :ssl-provider) (detect-ssl-provider))]
+    (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
       (.setProvider context-server ssl-provider))
-    (if (string? (options :keystore))
-      (.setKeyStorePath context-server (options :keystore))
-      (.setKeyStore context-server ^KeyStore (options :keystore)))
-    (when (string? (options :keystore-type))
-      (.setKeyStoreType context-server (options :keystore-type)))
-    (.setKeyStorePassword context-server (options :key-password))
-    (when (options :key-manager-password)
-      (.setKeyManagerPassword context-server (options :key-manager-password)))
+    (if (string? keystore)
+      (.setKeyStorePath context-server keystore)
+      (.setKeyStore context-server ^KeyStore keystore))
+    (when (string? keystore-type)
+      (.setKeyStoreType context-server keystore-type))
+    (.setKeyStorePassword context-server key-password)
+    (when key-manager-password
+      (.setKeyManagerPassword context-server key-manager-password))
     (cond
-      (string? (options :truststore))
-      (.setTrustStorePath context-server (options :truststore))
-      (instance? KeyStore (options :truststore))
-      (.setTrustStore context-server ^KeyStore (options :truststore)))
-    (when (options :trust-password)
-      (.setTrustStorePassword context-server (options :trust-password)))
-    (case (options :client-auth)
+      (string? truststore)
+      (.setTrustStorePath context-server truststore)
+      (instance? KeyStore truststore)
+      (.setTrustStore context-server ^KeyStore truststore))
+    (when trust-password
+      (.setTrustStorePassword context-server trust-password))
+    (when truststore-type
+      (.setTrustStoreType context-server truststore-type))
+    (case client-auth
       :need (.setNeedClientAuth context-server true)
       :want (.setWantClientAuth context-server true)
       nil)
-    (when-let [exclude-ciphers (options :exclude-ciphers)]
+    (when-let [exclude-ciphers exclude-ciphers]
       (let [ciphers (into-array String exclude-ciphers)]
-        (if (options :replace-exclude-ciphers?)
+        (if replace-exclude-ciphers?
           (.setExcludeCipherSuites context-server ciphers)
           (.addExcludeCipherSuites context-server ciphers))))
-    (when-let [exclude-protocols (options :exclude-protocols)]
+    (when exclude-protocols
       (let [protocols (into-array String exclude-protocols)]
-        (if (options :replace-exclude-protocols?)
+        (if replace-exclude-protocols?
           (.setExcludeProtocols context-server protocols)
           (.addExcludeProtocols context-server protocols))))
     context-server))
