@@ -182,7 +182,8 @@
                      (reify-default-ws-creator ws)
                      (reify-custom-ws-creator ws))))
     (handle [^String target, ^Request request req ^Response res]
-      (let [wsf (proxy-super getWebSocketFactory)]
+      (let [^WebSocketHandler this this
+            ^WebSocketServletFactory wsf (proxy-super getWebSocketFactory)]
         (if (.isUpgradeRequest wsf req res)
           (if (.acceptWebSocket wsf req res)
             (.setHandled request true)

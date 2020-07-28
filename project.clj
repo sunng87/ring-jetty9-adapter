@@ -18,7 +18,9 @@
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
-  :profiles {:example-http2 {:source-paths ["examples/"]
+  :profiles {:dev {:dependencies [[clj-http "3.10.1"]
+                                  [stylefruits/gniazdo "1.1.4"]]}
+             :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
              ;; for openjdk8
              :example-http2-openjdk8 {:source-paths ["examples/"]
