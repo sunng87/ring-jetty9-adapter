@@ -16,10 +16,20 @@
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
-  :profiles {;; for openjdk8
+  :profiles {;; for openjdk8 above u252
              :example-http2-openjdk8 {:source-paths ["examples/"]
                                       :main ^:skip-aot rj9a.http2
                                       :dependencies [[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]}
+             ;; for openjdk8 below u252
+             :example-http2-legacy {:source-paths ["examples/"]
+                                    :main ^:skip-aot rj9a.http2
+                                    :dependencies [;; OpenJDK8 ALPN
+                                                   [org.eclipse.jetty.alpn/alpn-api "1.1.3.v20160715"]
+                                                   [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
+                                                   [org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]
+                                    :boot-dependencies [[org.mortbay.jetty.alpn/alpn-boot "8.1.12.v20180117"
+                                                         :prepend true]]
+                                    :plugins [[info.sunng/lein-bootclasspath-deps "0.3.0"]]}
              ;; for jdk9+
              :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2

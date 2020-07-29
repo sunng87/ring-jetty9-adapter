@@ -10,13 +10,6 @@ As of Ring 1.6, the official Jetty adapter has been updated to Jetty
 9.2. However, rj9a tracks most recent Jetty release and offers
 additional features like http/2 and websocket.
 
-From 0.12, we ship [conscrypt](https://conscrypt.org) TLS
-implementation by default, which offers better performance and
-compatibility. If conscrypt is not available in your platform, you can
-still fallback to JDK implementation by excluding conscrypt
-dependencies and including OpenJDK8 or JDK9 dependencies. See example
-profiles in `project.clj` for detail.
-
 ## Usage
 
 ### Leiningen
@@ -61,6 +54,20 @@ uberjar size:
 ```
 
 ### HTTP/2
+
+ALPN is required for HTTP/2 transport, you will need additional dependency
+to enable ALPN.
+
+* For JDK 11 and above, add `[org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]`
+* For OpenJDK 8u252 and above, add `[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]`
+* For OpenJDK 8 but below 252, please check `example-http2-legacy` profile
+in project.clj for boot-classpath configuration
+* For any version of JDK users, conscrypt implementation is supported by
+adding `[org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]` but it's not recommended for
+now because of [memory leak issue](https://github.com/google/conscrypt/issues/835)
+
+Note your will need to replace `~jetty-version` with corresponding jetty version that
+your version of rj9a uses.
 
 To enable HTTP/2 on cleartext and secure transport, you can simply add
 options to `run-jetty` like:
