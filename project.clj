@@ -16,16 +16,14 @@
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
-  :profiles {:example-http2 {:source-paths ["examples/"]
-                             :main ^:skip-aot rj9a.http2}
-             ;; for openjdk8
+  :profiles {;; for openjdk8
              :example-http2-openjdk8 {:source-paths ["examples/"]
                                       :main ^:skip-aot rj9a.http2
                                       :dependencies [[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]}
              ;; for jdk9+
-             :example-http2-jdk11 {:source-paths ["examples/"]
-                                  :main ^:skip-aot rj9a.http2
-                                  :dependencies [[org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]}
+             :example-http2 {:source-paths ["examples/"]
+                             :main ^:skip-aot rj9a.http2
+                             :dependencies [[org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
