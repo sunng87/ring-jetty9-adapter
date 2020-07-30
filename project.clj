@@ -1,4 +1,4 @@
-(def jetty-version "9.4.30.v20200611")
+(def jetty-version "9.4.31.v20200723")
 
 (defproject info.sunng/ring-jetty9-adapter "0.14.1-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
