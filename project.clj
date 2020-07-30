@@ -16,7 +16,9 @@
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
-  :profiles {;; for openjdk8 above u252
+  :profiles {:dev {:dependencies [[clj-http "3.10.1"]
+                                  [stylefruits/gniazdo "1.1.4"]]}
+             ;; for openjdk8 above u252
              :example-http2-openjdk8 {:source-paths ["examples/"]
                                       :main ^:skip-aot rj9a.http2
                                       :dependencies [[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]]}
