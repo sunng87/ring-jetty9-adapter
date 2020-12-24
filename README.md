@@ -92,13 +92,17 @@ You can define following handlers for websocket events.
                  :on-error (fn [ws e])
                  :on-close (fn [ws status-code reason])
                  :on-text (fn [ws text-message])
-                 :on-bytes (fn [ws bytes offset len])})
+                 :on-bytes (fn [ws bytes offset len])
+                 :on-ping (fn [ws bytebuffer])
+                 :on-pong (fn [ws bytebuffer])})
 ```
 
 WebSocketProtocol allows you to read and write data on the `ws` value:
 
 * (send! ws msg)
 * (send! ws msg callback)
+* (ping! ws)
+* (ping! ws msg)
 * (close! ws)
 * (remote-addr ws)
 * (idle-timeout! ws timeout)
