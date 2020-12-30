@@ -6,6 +6,9 @@
 
 (def echo-handler {:on-text (fn [ws text] (jetty/send! ws text))})
 
+(def ping-thing {:on-connect (fn [ws] (jetty/ping! ws "PING!"))
+                 :on-pong (fn [ws bytebuffer] (jetty/send! ws "PONG!"))})
+
 (defn websocket-accept [req]
   (println req)
   (assoc echo-handler
@@ -17,4 +20,5 @@
 (defn -main [& args]
   (jetty/run-jetty dummy-app {:port 5000 :websockets {"/path1" echo-handler
                                                       "/path2" websocket-accept
-                                                      "/path3" websocket-reject}}))
+                                                      "/path3" websocket-reject
+                                                      "/path4" ping-thing}}))

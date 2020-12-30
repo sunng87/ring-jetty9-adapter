@@ -24,6 +24,7 @@
             [ring.adapter.jetty9.websocket :refer [proxy-ws-handler] :as ws]))
 
 (def send! ws/send!)
+(def ping! ws/ping!)
 (def close! ws/close!)
 (def remote-addr ws/remote-addr)
 (def idle-timeout! ws/idle-timeout!)

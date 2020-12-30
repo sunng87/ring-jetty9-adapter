@@ -3,7 +3,8 @@
            [org.eclipse.jetty.server.handler AbstractHandler]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
-            UpgradeRequest RemoteEndpoint WriteCallback]
+            UpgradeRequest RemoteEndpoint WriteCallback
+            WebSocketPingPongListener]
            [org.eclipse.jetty.websocket.api.extensions ExtensionConfig]
            [org.eclipse.jetty.websocket.server WebSocketHandler]
            [org.eclipse.jetty.websocket.servlet
@@ -18,6 +19,7 @@
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
+  (ping! [this] [this msg])
   (close! [this])
   (remote-addr [this])
   (idle-timeout! [this ms])
@@ -26,6 +28,9 @@
 
 (defprotocol WebSocketSend
   (-send! [x ws] [x ws callback] "How to encode content sent to the WebSocket clients"))
+
+(defprotocol WebSocketPing
+  (-ping! [x ws] "How to encode bytes sent with a ping"))
 
 (def ^:private no-op (constantly nil))
 
@@ -72,13 +77,20 @@
          (.sendString ^RemoteEndpoint (str this))))
     ([this ws callback]
      (-> ^WebSocketAdapter ws .getRemote
-         (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback)))))
+         (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback))))))
 
-  ;; "nil" could PING?
-  ;; nil
-  ;; (-send! [this ws] ()
+(extend-protocol WebSocketPing
+  (Class/forName "[B")
+  (-ping! [ba ws] (-ping! (ByteBuffer/wrap ba) ws))
 
-  )
+  ByteBuffer
+  (-ping! [bb ws] (-> ^WebSocketAdapter ws .getRemote (.sendPing ^ByteBuffer bb)))
+
+  String
+  (-ping! [s ws] (-ping! (.getBytes ^String s) ws))
+
+  Object
+  (-ping! [o ws] (-ping! (str o) ws)))
 
 (extend-protocol RequestMapDecoder
   ServletUpgradeRequest
@@ -106,6 +118,11 @@
      (-send! msg this))
     ([this msg callback]
      (-send! msg this callback)))
+  (ping!
+    ([this]
+     (-ping! (ByteBuffer/allocate 0) this))
+    ([this msg]
+     (-ping! msg this)))
   (close! [this]
     (.. this (getSession) (close)))
   (remote-addr [this]
@@ -117,17 +134,17 @@
   (req-of [this]
     (build-request-map (.. this (getSession) (getUpgradeRequest)))))
 
-(defn- do-nothing [& args])
-
 (defn- proxy-ws-adapter
   [{:as ws-fns
-    :keys [on-connect on-error on-text on-close on-bytes]
-    :or {on-connect do-nothing
-         on-error do-nothing
-         on-text do-nothing
-         on-close do-nothing
-         on-bytes do-nothing}}]
-  (proxy [WebSocketAdapter] []
+    :keys [on-connect on-error on-text on-close on-bytes on-ping on-pong]
+    :or {on-connect no-op
+         on-error no-op
+         on-text no-op
+         on-close no-op
+         on-bytes no-op
+         on-ping no-op
+         on-pong no-op}}]
+  (proxy [WebSocketAdapter WebSocketPingPongListener] []
     (onWebSocketConnect [^Session session]
       (let [^WebSocketAdapter this this]
         (proxy-super onWebSocketConnect session))
@@ -141,7 +158,11 @@
         (proxy-super onWebSocketClose statusCode reason))
       (on-close this statusCode reason))
     (onWebSocketBinary [^bytes payload offset len]
-      (on-bytes this payload offset len))))
+      (on-bytes this payload offset len))
+    (onWebSocketPing [^ByteBuffer bytebuffer]
+      (on-ping this bytebuffer))
+    (onWebSocketPong [^ByteBuffer bytebuffer]
+      (on-pong this bytebuffer))))
 
 (defn- reify-default-ws-creator
   [ws-fns]
