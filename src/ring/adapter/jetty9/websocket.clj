@@ -3,13 +3,10 @@
            [org.eclipse.jetty.server.handler AbstractHandler]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
-            UpgradeRequest RemoteEndpoint WriteCallback
-            WebSocketPingPongListener]
-           [org.eclipse.jetty.websocket.api.extensions ExtensionConfig]
-           [org.eclipse.jetty.websocket.server WebSocketHandler]
-           [org.eclipse.jetty.websocket.servlet
-            WebSocketServletFactory WebSocketCreator
-            ServletUpgradeRequest ServletUpgradeResponse]
+            UpgradeRequest RemoteEndpoint WriteCallback WebSocketPingPongListener]
+           [org.eclipse.jetty.websocket.server JettyWebSocketServlet
+            JettyWebSocketServletFactory JettyWebSocketCreator JettyServerUpgradeRequest]
+           [org.eclipse.jetty.websocket.common JettyExtensionConfig]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale])
@@ -93,7 +90,7 @@
   (-ping! [o ws] (-ping! (str o) ws)))
 
 (extend-protocol RequestMapDecoder
-  ServletUpgradeRequest
+  JettyServerUpgradeRequest
   (build-request-map [request]
     (let [servlet-request (.getHttpServletRequest request)
           base-request-map {:server-port (.getServerPort servlet-request)
@@ -166,13 +163,13 @@
 
 (defn- reify-default-ws-creator
   [ws-fns]
-  (reify WebSocketCreator
+  (reify JettyWebSocketCreator
     (createWebSocket [this _ _]
       (proxy-ws-adapter ws-fns))))
 
 (defn- reify-custom-ws-creator
   [ws-creator-fn]
-  (reify WebSocketCreator
+  (reify JettyWebSocketCreator
     (createWebSocket [this req resp]
       (let [req-map (build-request-map req)
             ws-results (ws-creator-fn req-map)]
@@ -183,7 +180,7 @@
             (when-let [sp (:subprotocol ws-results)]
               (.setAcceptedSubProtocol resp sp))
             (when-let [exts (not-empty (:extensions ws-results))]
-              (.setExtensions resp (mapv #(ExtensionConfig. ^String %) exts)))
+              (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
 (defn ^:internal proxy-ws-handler
@@ -193,21 +190,12 @@
               ws-max-text-message-size]
        :or {ws-max-idle-time 500000
             ws-max-text-message-size 65536}}]
-  (proxy [WebSocketHandler] []
-    (configure [^WebSocketServletFactory factory]
-      (doto (.getPolicy factory)
+  (proxy [JettyWebSocketServlet] []
+    (configure [^JettyWebSocketServletFactory factory]
+      (doto factory
         (.setIdleTimeout ws-max-idle-time)
         (.setMaxTextMessageSize ws-max-text-message-size))
-      (.setCreator factory
-                   (if (map? ws)
+      (let [creator (if (map? ws)
                      (reify-default-ws-creator ws)
-                     (reify-custom-ws-creator ws))))
-    (handle [^String target, ^Request request req ^Response res]
-      (let [^WebSocketHandler this this
-            ^WebSocketServletFactory wsf (proxy-super getWebSocketFactory)]
-        (if (.isUpgradeRequest wsf req res)
-          (if (.acceptWebSocket wsf req res)
-            (.setHandled request true)
-            (when (.isCommitted res)
-              (.setHandled request true)))
-          (proxy-super handle target request req res))))))
+                     (reify-custom-ws-creator ws))]
+        (.setCreator factory creator)))))
