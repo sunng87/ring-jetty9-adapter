@@ -7,7 +7,8 @@
             SslConnectionFactory ConnectionFactory
             ProxyConnectionFactory]
            [org.eclipse.jetty.server.handler
-            HandlerCollection AbstractHandler ContextHandler HandlerList]
+            HandlerCollection AbstractHandler HandlerList]
+           [org.eclipse.jetty.servlet ServletContextHandler]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
@@ -250,7 +251,7 @@
   :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded), ignored if `:thread-pool` provided
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
-  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536) 
+  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :websockets - a map from context path to a map of handler fns:
    {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session
@@ -274,10 +275,11 @@
         ring-app-handler (wrap-jetty-handler
                           (if async? (proxy-async-handler handler) (proxy-handler handler)))
         ws-handlers (map (fn [[context-path handler]]
-                           (doto (ContextHandler.)
+                           ;; FIXME: shared servlet context handler
+                           (doto (ServletContextHandler.)
                              (.setContextPath context-path)
                              (.setAllowNullPathInfo allow-null-path-info)
-                             (.setHandler (proxy-ws-handler handler options))))
+                             (.addServlet (proxy-ws-handler handler options) "/")))
                          websockets)
         contexts (doto (HandlerList.)
                    (.setHandlers

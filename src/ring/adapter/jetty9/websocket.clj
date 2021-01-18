@@ -161,13 +161,13 @@
     (onWebSocketPong [^ByteBuffer bytebuffer]
       (on-pong this bytebuffer))))
 
-(defn- reify-default-ws-creator
+(defn reify-default-ws-creator
   [ws-fns]
   (reify JettyWebSocketCreator
     (createWebSocket [this _ _]
       (proxy-ws-adapter ws-fns))))
 
-(defn- reify-custom-ws-creator
+(defn reify-custom-ws-creator
   [ws-creator-fn]
   (reify JettyWebSocketCreator
     (createWebSocket [this req resp]
@@ -183,6 +183,7 @@
               (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
+;; not in use for jetty 10
 (defn ^:internal proxy-ws-handler
   "Returns a Jetty websocket handler"
   [ws {:as options
