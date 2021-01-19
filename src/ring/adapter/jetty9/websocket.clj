@@ -4,8 +4,10 @@
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
             UpgradeRequest RemoteEndpoint WriteCallback WebSocketPingPongListener]
-           [org.eclipse.jetty.websocket.server JettyWebSocketServlet
+           [org.eclipse.jetty.websocket.server JettyWebSocketServlet JettyWebSocketServerContainer
             JettyWebSocketServletFactory JettyWebSocketCreator JettyServerUpgradeRequest]
+           [org.eclipse.jetty.websocket.server.config
+            JettyWebSocketServletContainerInitializer JettyWebSocketServletContainerInitializer$Configurator]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
@@ -182,6 +184,18 @@
             (when-let [exts (not-empty (:extensions ws-results))]
               (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
+
+(defn configure-jetty [context-handler {:as options
+                                        :keys [ws-max-idle-time
+                                               ws-max-text-message-size]
+                                        :or {ws-max-idle-time 500000
+                                             ws-max-text-message-size 65536}}]
+  (let [configurator (reify JettyWebSocketServletContainerInitializer$Configurator
+                       (accept [this servlet-context container]
+                         (doto container
+                           (.setIdleTimeout ws-max-idle-time)
+                           (.setMaxTextMessageSize ws-max-text-message-size))))]
+    (JettyWebSocketServletContainerInitializer/configure context-handler configurator)))
 
 ;; not in use for jetty 10
 (defn ^:internal proxy-ws-handler
