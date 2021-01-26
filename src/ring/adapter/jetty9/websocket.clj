@@ -1,6 +1,5 @@
 (ns ring.adapter.jetty9.websocket
-  (:import [org.eclipse.jetty.server Request Response]
-           [org.eclipse.jetty.server.handler AbstractHandler]
+  (:import [org.eclipse.jetty.servlet ServletHolder]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
             UpgradeRequest RemoteEndpoint WriteCallback WebSocketPingPongListener]
@@ -9,6 +8,7 @@
            [org.eclipse.jetty.websocket.server.config
             JettyWebSocketServletContainerInitializer JettyWebSocketServletContainerInitializer$Configurator]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
+           [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale])
@@ -197,20 +197,18 @@
                            (.setMaxTextMessageSize ws-max-text-message-size))))]
     (JettyWebSocketServletContainerInitializer/configure context-handler configurator)))
 
-;; not in use for jetty 10
-(defn ^:internal proxy-ws-handler
-  "Returns a Jetty websocket handler"
-  [ws {:as options
-       :keys [ws-max-idle-time
-              ws-max-text-message-size]
-       :or {ws-max-idle-time 500000
-            ws-max-text-message-size 65536}}]
-  (proxy [JettyWebSocketServlet] []
-    (configure [^JettyWebSocketServletFactory factory]
-      (doto factory
-        (.setIdleTimeout ws-max-idle-time)
-        (.setMaxTextMessageSize ws-max-text-message-size))
-      (let [creator (if (map? ws)
-                     (reify-default-ws-creator ws)
-                     (reify-custom-ws-creator ws))]
-        (.setCreator factory creator)))))
+(defn proxy-ws-servlet [ws {:as options
+                            :keys [ws-max-idle-time
+                                   ws-max-text-message-size]
+                            :or {ws-max-idle-time 500000
+                                 ws-max-text-message-size 65536}}]
+  (ServletHolder.
+   (proxy [HttpServlet] []
+     (doGet [req res]
+       (let [creator (if (map? ws)
+                       (reify-default-ws-creator ws)
+                       (reify-custom-ws-creator ws))
+             container (JettyWebSocketServerContainer/getContainer (.getServletContext ^HttpServlet this))]
+         (.setIdleTimeout container ws-max-idle-time)
+         (.setMaxTextMessageSize container ws-max-text-message-size)
+         (.upgrade container creator req res))))))
