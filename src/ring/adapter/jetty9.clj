@@ -22,7 +22,7 @@
            [java.security KeyStore])
   (:require [ring.util.servlet :as servlet]
             [ring.adapter.jetty9.common :refer :all]
-            [ring.adapter.jetty9.websocket :refer [proxy-ws-handler] :as ws]))
+            [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
 (def ping! ws/ping!)
@@ -279,7 +279,7 @@
                            (doto (ServletContextHandler.)
                              (.setContextPath context-path)
                              (.setAllowNullPathInfo allow-null-path-info)
-                             (.addServlet (proxy-ws-handler handler options) "/")))
+                             (.addServlet (ws/proxy-ws-servlet handler options) "/")))
                          websockets)
         contexts (doto (HandlerList.)
                    (.setHandlers
