@@ -8,10 +8,11 @@
             ProxyConnectionFactory]
            [org.eclipse.jetty.server.handler
             HandlerCollection AbstractHandler HandlerList]
-           [org.eclipse.jetty.servlet ServletContextHandler]
+           [org.eclipse.jetty.servlet ServletContextHandler ServletHolder]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
+           [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [javax.servlet AsyncContext]
            [org.eclipse.jetty.http2
@@ -276,10 +277,13 @@
                           (if async? (proxy-async-handler handler) (proxy-handler handler)))
         ws-handlers (map (fn [[context-path handler]]
                            ;; FIXME: shared servlet context handler
-                           (doto (ServletContextHandler.)
-                             (.setContextPath context-path)
-                             (.setAllowNullPathInfo allow-null-path-info)
-                             (.addServlet (ws/proxy-ws-servlet handler options) "/")))
+                           (let [ch  (ServletContextHandler.)]
+                             (doto ch
+                               (.setContextPath context-path)
+                               (.setAllowNullPathInfo allow-null-path-info)
+                               (.addServlet ^ServletHolder (ws/proxy-ws-servlet handler options) "/"))
+                             (JettyWebSocketServletContainerInitializer/configure ch nil)
+                             ch))
                          websockets)
         contexts (doto (HandlerList.)
                    (.setHandlers

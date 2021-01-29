@@ -11,7 +11,8 @@
            [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
-           [java.util Locale])
+           [java.util Locale]
+           [java.time Duration])
   (:require [ring.adapter.jetty9.common :refer :all]
             [clojure.string :as string]
             [ring.util.servlet :as servlet]))
@@ -209,6 +210,6 @@
                        (reify-default-ws-creator ws)
                        (reify-custom-ws-creator ws))
              container (JettyWebSocketServerContainer/getContainer (.getServletContext ^HttpServlet this))]
-         (.setIdleTimeout container ws-max-idle-time)
+         (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
          (.setMaxTextMessageSize container ws-max-text-message-size)
          (.upgrade container creator req res))))))
