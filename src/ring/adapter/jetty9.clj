@@ -277,13 +277,11 @@
                           (if async? (proxy-async-handler handler) (proxy-handler handler)))
         ws-handlers (map (fn [[context-path handler]]
                            ;; FIXME: shared servlet context handler
-                           (let [ch  (ServletContextHandler.)]
-                             (doto ch
-                               (.setContextPath context-path)
-                               (.setAllowNullPathInfo allow-null-path-info)
-                               (.addServlet ^ServletHolder (ws/proxy-ws-servlet handler options) "/"))
-                             (JettyWebSocketServletContainerInitializer/configure ch nil)
-                             ch))
+                           (doto (ServletContextHandler.)
+                             (.setContextPath context-path)
+                             (.setAllowNullPathInfo allow-null-path-info)
+                             (.addServlet ^ServletHolder (ws/proxy-ws-servlet handler options) "/")
+                             (JettyWebSocketServletContainerInitializer/configure nil)))
                          websockets)
         contexts (doto (HandlerList.)
                    (.setHandlers

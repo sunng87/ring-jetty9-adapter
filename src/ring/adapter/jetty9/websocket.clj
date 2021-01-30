@@ -186,18 +186,6 @@
               (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
-(defn configure-jetty [context-handler {:as options
-                                        :keys [ws-max-idle-time
-                                               ws-max-text-message-size]
-                                        :or {ws-max-idle-time 500000
-                                             ws-max-text-message-size 65536}}]
-  (let [configurator (reify JettyWebSocketServletContainerInitializer$Configurator
-                       (accept [this servlet-context container]
-                         (doto container
-                           (.setIdleTimeout ws-max-idle-time)
-                           (.setMaxTextMessageSize ws-max-text-message-size))))]
-    (JettyWebSocketServletContainerInitializer/configure context-handler configurator)))
-
 (defn proxy-ws-servlet [ws {:as options
                             :keys [ws-max-idle-time
                                    ws-max-text-message-size]
