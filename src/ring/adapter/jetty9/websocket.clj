@@ -4,7 +4,7 @@
             WebSocketAdapter Session
             RemoteEndpoint WriteCallback WebSocketPingPongListener]
            [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
-             JettyWebSocketCreator JettyServerUpgradeRequest]
+            JettyWebSocketCreator JettyServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
            [javax.servlet.http HttpServlet]
            [clojure.lang IFn]

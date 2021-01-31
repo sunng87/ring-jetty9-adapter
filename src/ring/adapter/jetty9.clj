@@ -44,7 +44,6 @@
     (string? response) {:body response}
     :else response))
 
-
 (defn ^:internal proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."
   [handler]
@@ -160,9 +159,9 @@
                                                      (HTTP2ServerConnectionFactory. http-configuration)])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
-            ^Server server
-            ^SslContextFactory ssl-context-factory
-            ^"[Lorg.eclipse.jetty.server.ConnectionFactory;" (into-array ConnectionFactory secure-connection-factory))
+           ^Server server
+           ^SslContextFactory ssl-context-factory
+           ^"[Lorg.eclipse.jetty.server.ConnectionFactory;" (into-array ConnectionFactory secure-connection-factory))
       (.setPort port)
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
@@ -172,9 +171,9 @@
                                      h2c? (concat [(HTTP2CServerConnectionFactory. http-configuration)])
                                      proxy? (concat [(ProxyConnectionFactory.)]))]
     (doto (ServerConnector.
-            ^Server server
-            ^"[Lorg.eclipse.jetty.server.ConnectionFactory;"
-            (into-array ConnectionFactory plain-connection-factories))
+           ^Server server
+           ^"[Lorg.eclipse.jetty.server.ConnectionFactory;"
+           (into-array ConnectionFactory plain-connection-factories))
       (.setPort port)
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
