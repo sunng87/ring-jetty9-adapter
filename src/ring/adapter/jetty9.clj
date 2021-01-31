@@ -114,9 +114,7 @@
   [{:as options
     :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type ssl-protocols ssl-provider
-           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]
-    :or {ssl-protocols ["TLSv1.3" "TLSv1.2"]}}]
-  ;; FIXME: ssl-protocols
+           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]}]
   (let [context-server (SslContextFactory$Server.)]
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
     (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
@@ -147,6 +145,8 @@
         (if replace-exclude-ciphers?
           (.setExcludeCipherSuites context-server ciphers)
           (.addExcludeCipherSuites context-server ciphers))))
+    (when ssl-protocols
+      (.setIncludeProtocols context-server (into-array String ssl-protocols)))
     (when exclude-protocols
       (let [protocols (into-array String exclude-protocols)]
         (if replace-exclude-protocols?
