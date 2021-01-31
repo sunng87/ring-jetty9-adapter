@@ -2,20 +2,16 @@
   (:import [org.eclipse.jetty.servlet ServletHolder]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
-            UpgradeRequest RemoteEndpoint WriteCallback WebSocketPingPongListener]
-           [org.eclipse.jetty.websocket.server JettyWebSocketServlet JettyWebSocketServerContainer
-            JettyWebSocketServletFactory JettyWebSocketCreator JettyServerUpgradeRequest]
-           [org.eclipse.jetty.websocket.server.config
-            JettyWebSocketServletContainerInitializer JettyWebSocketServletContainerInitializer$Configurator]
+            RemoteEndpoint WriteCallback WebSocketPingPongListener]
+           [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
+             JettyWebSocketCreator JettyServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
-           [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
+           [javax.servlet.http HttpServlet]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale]
            [java.time Duration])
-  (:require [ring.adapter.jetty9.common :refer :all]
-            [clojure.string :as string]
-            [ring.util.servlet :as servlet]))
+  (:require [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map get-headers set-headers]]))
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
@@ -135,7 +131,7 @@
     (build-request-map (.. this (getSession) (getUpgradeRequest)))))
 
 (defn- proxy-ws-adapter
-  [{:as ws-fns
+  [{:as _
     :keys [on-connect on-error on-text on-close on-bytes on-ping on-pong]
     :or {on-connect no-op
          on-error no-op
@@ -186,7 +182,7 @@
               (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
-(defn proxy-ws-servlet [ws {:as options
+(defn proxy-ws-servlet [ws {:as _
                             :keys [ws-max-idle-time
                                    ws-max-text-message-size]
                             :or {ws-max-idle-time 500000

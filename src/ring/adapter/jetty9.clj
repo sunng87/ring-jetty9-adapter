@@ -4,10 +4,9 @@
   (:import [org.eclipse.jetty.server
             Handler Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory
-            SslConnectionFactory ConnectionFactory
+            ConnectionFactory
             ProxyConnectionFactory]
-           [org.eclipse.jetty.server.handler
-            HandlerCollection AbstractHandler HandlerList]
+           [org.eclipse.jetty.server.handler AbstractHandler HandlerList]
            [org.eclipse.jetty.servlet ServletContextHandler ServletHolder]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
@@ -22,7 +21,7 @@
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
   (:require [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer :all]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -81,7 +80,8 @@
           (.setHandled base-request true))))))
 
 (defn- http-config
-  [{:as options
+  "Creates jetty http configurator"
+  [{:as _
     :keys [ssl-port secure-scheme output-buffer-size request-header-size
            response-header-size send-server-version? send-date-header?
            header-cache-size]
@@ -93,7 +93,6 @@
          send-server-version? true
          send-date-header? false
          header-cache-size 512}}]
-  "Creates jetty http configurator"
   (doto (HttpConfiguration.)
     (.setSecureScheme secure-scheme)
     (.setSecurePort ssl-port)
@@ -118,6 +117,7 @@
            truststore trust-password truststore-type ssl-protocols ssl-provider
            exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]
     :or {ssl-protocols ["TLSv1.3" "TLSv1.2"]}}]
+  ;; FIXME: ssl-protocols
   (let [context-server (SslContextFactory$Server.)]
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
     (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
@@ -267,7 +267,7 @@
   :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   "
   [handler {:as options
-            :keys [max-threads websockets configurator join? async?
+            :keys [websockets configurator join? async?
                    allow-null-path-info wrap-jetty-handler]
             :or {allow-null-path-info false
                  join? true
