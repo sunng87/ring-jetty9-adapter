@@ -1,11 +1,11 @@
-(def jetty-version "9.4.36.v20210114")
+(def jetty-version "9.4.38.v20210224")
 
 (defproject info.sunng/ring-jetty9-adapter "0.14.3-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.1"]
+  :dependencies [[org.clojure/clojure "1.10.2"]
                  [ring/ring-servlet "1.8.1"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
