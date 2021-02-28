@@ -1,4 +1,4 @@
-(def jetty-version "9.4.36.v20210114")
+(def jetty-version "10.0.1")
 
 (defproject info.sunng/ring-jetty9-adapter "0.14.3-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -9,7 +9,8 @@
                  [ring/ring-servlet "1.8.1"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
-                 [org.eclipse.jetty.websocket/websocket-server ~jetty-version]
+                 [org.eclipse.jetty.websocket/websocket-jetty-api ~jetty-version]
+                 [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
@@ -17,7 +18,7 @@
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
   :profiles {:dev {:dependencies [[clj-http "3.10.1"]
-                                  [stylefruits/gniazdo "1.1.4"]]}
+                                  #_[stylefruits/gniazdo "1.1.4"]]}
              ;; for openjdk8 above u252
              :example-http2-openjdk8 {:source-paths ["examples/"]
                                       :main ^:skip-aot rj9a.http2

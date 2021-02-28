@@ -4,13 +4,14 @@
   (:import [org.eclipse.jetty.server
             Handler Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory
-            SslConnectionFactory ConnectionFactory
+            ConnectionFactory
             ProxyConnectionFactory]
-           [org.eclipse.jetty.server.handler
-            HandlerCollection AbstractHandler ContextHandler HandlerList]
+           [org.eclipse.jetty.server.handler AbstractHandler HandlerList]
+           [org.eclipse.jetty.servlet ServletContextHandler ServletHolder]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
+           [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [javax.servlet AsyncContext]
            [org.eclipse.jetty.http2
@@ -20,8 +21,8 @@
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
   (:require [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer :all]
-            [ring.adapter.jetty9.websocket :refer [proxy-ws-handler] :as ws]))
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
+            [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
 (def ping! ws/ping!)
@@ -42,7 +43,6 @@
   (cond
     (string? response) {:body response}
     :else response))
-
 
 (defn ^:internal proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."
@@ -79,7 +79,8 @@
           (.setHandled base-request true))))))
 
 (defn- http-config
-  [{:as options
+  "Creates jetty http configurator"
+  [{:as _
     :keys [ssl-port secure-scheme output-buffer-size request-header-size
            response-header-size send-server-version? send-date-header?
            header-cache-size]
@@ -91,7 +92,6 @@
          send-server-version? true
          send-date-header? false
          header-cache-size 512}}]
-  "Creates jetty http configurator"
   (doto (HttpConfiguration.)
     (.setSecureScheme secure-scheme)
     (.setSecurePort ssl-port)
@@ -114,8 +114,7 @@
   [{:as options
     :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type ssl-protocols ssl-provider
-           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]
-    :or {ssl-protocols ["TLSv1.3" "TLSv1.2"]}}]
+           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]}]
   (let [context-server (SslContextFactory$Server.)]
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
     (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
@@ -146,6 +145,8 @@
         (if replace-exclude-ciphers?
           (.setExcludeCipherSuites context-server ciphers)
           (.addExcludeCipherSuites context-server ciphers))))
+    (when ssl-protocols
+      (.setIncludeProtocols context-server (into-array String ssl-protocols)))
     (when exclude-protocols
       (let [protocols (into-array String exclude-protocols)]
         (if replace-exclude-protocols?
@@ -158,9 +159,9 @@
                                                      (HTTP2ServerConnectionFactory. http-configuration)])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
-            ^Server server
-            ^SslContextFactory ssl-context-factory
-            ^"[Lorg.eclipse.jetty.server.ConnectionFactory;" (into-array ConnectionFactory secure-connection-factory))
+           ^Server server
+           ^SslContextFactory ssl-context-factory
+           ^"[Lorg.eclipse.jetty.server.ConnectionFactory;" (into-array ConnectionFactory secure-connection-factory))
       (.setPort port)
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
@@ -170,9 +171,9 @@
                                      h2c? (concat [(HTTP2CServerConnectionFactory. http-configuration)])
                                      proxy? (concat [(ProxyConnectionFactory.)]))]
     (doto (ServerConnector.
-            ^Server server
-            ^"[Lorg.eclipse.jetty.server.ConnectionFactory;"
-            (into-array ConnectionFactory plain-connection-factories))
+           ^Server server
+           ^"[Lorg.eclipse.jetty.server.ConnectionFactory;"
+           (into-array ConnectionFactory plain-connection-factories))
       (.setPort port)
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
@@ -250,7 +251,7 @@
   :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded), ignored if `:thread-pool` provided
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
-  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536) 
+  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :websockets - a map from context path to a map of handler fns:
    {\"/context\" {:on-connect #(create-fn %)              ; ^Session ws-session
@@ -265,7 +266,7 @@
   :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   "
   [handler {:as options
-            :keys [max-threads websockets configurator join? async?
+            :keys [websockets configurator join? async?
                    allow-null-path-info wrap-jetty-handler]
             :or {allow-null-path-info false
                  join? true
@@ -274,10 +275,12 @@
         ring-app-handler (wrap-jetty-handler
                           (if async? (proxy-async-handler handler) (proxy-handler handler)))
         ws-handlers (map (fn [[context-path handler]]
-                           (doto (ContextHandler.)
+                           ;; FIXME: shared servlet context handler
+                           (doto (ServletContextHandler.)
                              (.setContextPath context-path)
                              (.setAllowNullPathInfo allow-null-path-info)
-                             (.setHandler (proxy-ws-handler handler options))))
+                             (.addServlet ^ServletHolder (ws/proxy-ws-servlet handler options) "/")
+                             (JettyWebSocketServletContainerInitializer/configure nil)))
                          websockets)
         contexts (doto (HandlerList.)
                    (.setHandlers

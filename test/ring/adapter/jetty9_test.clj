@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [ring.adapter.jetty9 :as jetty9]
             [clj-http.client :as client]
-            [gniazdo.core :as ws]))
+            #_[gniazdo.core :as ws]))
 
 (defn dummy-app [req]
   {:status 200})
@@ -45,7 +45,7 @@
     (let [resp (client/get "https://localhost:50524/" {:insecure? true})]
       (is (= 200 (:status resp))))))
 
-(deftest websocket-test
+#_(deftest websocket-test
   (with-jetty [server [dummy-app {:port       50524
                                   :join?      false
                                   :websockets {"/path" websocket-handler}}]]

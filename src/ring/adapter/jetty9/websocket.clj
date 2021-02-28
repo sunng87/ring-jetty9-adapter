@@ -1,21 +1,17 @@
 (ns ring.adapter.jetty9.websocket
-  (:import [org.eclipse.jetty.server Request Response]
-           [org.eclipse.jetty.server.handler AbstractHandler]
+  (:import [org.eclipse.jetty.servlet ServletHolder]
            [org.eclipse.jetty.websocket.api
             WebSocketAdapter Session
-            UpgradeRequest RemoteEndpoint WriteCallback
-            WebSocketPingPongListener]
-           [org.eclipse.jetty.websocket.api.extensions ExtensionConfig]
-           [org.eclipse.jetty.websocket.server WebSocketHandler]
-           [org.eclipse.jetty.websocket.servlet
-            WebSocketServletFactory WebSocketCreator
-            ServletUpgradeRequest ServletUpgradeResponse]
+            RemoteEndpoint WriteCallback WebSocketPingPongListener]
+           [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
+            JettyWebSocketCreator JettyServerUpgradeRequest]
+           [org.eclipse.jetty.websocket.common JettyExtensionConfig]
+           [javax.servlet.http HttpServlet]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
-           [java.util Locale])
-  (:require [ring.adapter.jetty9.common :refer :all]
-            [clojure.string :as string]
-            [ring.util.servlet :as servlet]))
+           [java.util Locale]
+           [java.time Duration])
+  (:require [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map get-headers set-headers]]))
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
@@ -93,7 +89,7 @@
   (-ping! [o ws] (-ping! (str o) ws)))
 
 (extend-protocol RequestMapDecoder
-  ServletUpgradeRequest
+  JettyServerUpgradeRequest
   (build-request-map [request]
     (let [servlet-request (.getHttpServletRequest request)
           base-request-map {:server-port (.getServerPort servlet-request)
@@ -135,7 +131,7 @@
     (build-request-map (.. this (getSession) (getUpgradeRequest)))))
 
 (defn- proxy-ws-adapter
-  [{:as ws-fns
+  [{:as _
     :keys [on-connect on-error on-text on-close on-bytes on-ping on-pong]
     :or {on-connect no-op
          on-error no-op
@@ -164,15 +160,15 @@
     (onWebSocketPong [^ByteBuffer bytebuffer]
       (on-pong this bytebuffer))))
 
-(defn- reify-default-ws-creator
+(defn reify-default-ws-creator
   [ws-fns]
-  (reify WebSocketCreator
+  (reify JettyWebSocketCreator
     (createWebSocket [this _ _]
       (proxy-ws-adapter ws-fns))))
 
-(defn- reify-custom-ws-creator
+(defn reify-custom-ws-creator
   [ws-creator-fn]
-  (reify WebSocketCreator
+  (reify JettyWebSocketCreator
     (createWebSocket [this req resp]
       (let [req-map (build-request-map req)
             ws-results (ws-creator-fn req-map)]
@@ -183,31 +179,21 @@
             (when-let [sp (:subprotocol ws-results)]
               (.setAcceptedSubProtocol resp sp))
             (when-let [exts (not-empty (:extensions ws-results))]
-              (.setExtensions resp (mapv #(ExtensionConfig. ^String %) exts)))
+              (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
-(defn ^:internal proxy-ws-handler
-  "Returns a Jetty websocket handler"
-  [ws {:as options
-       :keys [ws-max-idle-time
-              ws-max-text-message-size]
-       :or {ws-max-idle-time 500000
-            ws-max-text-message-size 65536}}]
-  (proxy [WebSocketHandler] []
-    (configure [^WebSocketServletFactory factory]
-      (doto (.getPolicy factory)
-        (.setIdleTimeout ws-max-idle-time)
-        (.setMaxTextMessageSize ws-max-text-message-size))
-      (.setCreator factory
-                   (if (map? ws)
-                     (reify-default-ws-creator ws)
-                     (reify-custom-ws-creator ws))))
-    (handle [^String target, ^Request request req ^Response res]
-      (let [^WebSocketHandler this this
-            ^WebSocketServletFactory wsf (proxy-super getWebSocketFactory)]
-        (if (.isUpgradeRequest wsf req res)
-          (if (.acceptWebSocket wsf req res)
-            (.setHandled request true)
-            (when (.isCommitted res)
-              (.setHandled request true)))
-          (proxy-super handle target request req res))))))
+(defn proxy-ws-servlet [ws {:as _
+                            :keys [ws-max-idle-time
+                                   ws-max-text-message-size]
+                            :or {ws-max-idle-time 500000
+                                 ws-max-text-message-size 65536}}]
+  (ServletHolder.
+   (proxy [HttpServlet] []
+     (doGet [req res]
+       (let [creator (if (map? ws)
+                       (reify-default-ws-creator ws)
+                       (reify-custom-ws-creator ws))
+             container (JettyWebSocketServerContainer/getContainer (.getServletContext ^HttpServlet this))]
+         (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
+         (.setMaxTextMessageSize container ws-max-text-message-size)
+         (.upgrade container creator req res))))))
