@@ -6,7 +6,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.2"]
-                 [ring/ring-servlet "1.8.1"
+                 [ring/ring-servlet "1.9.1"
                   :exclusions [javax.servlet/servlet-api]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-api ~jetty-version]
@@ -17,7 +17,7 @@
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
-  :profiles {:dev {:dependencies [[clj-http "3.10.1"]
+  :profiles {:dev {:dependencies [[clj-http "3.12.1"]
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              ;; for openjdk8 above u252
              :example-http2-openjdk8 {:source-paths ["examples/"]
