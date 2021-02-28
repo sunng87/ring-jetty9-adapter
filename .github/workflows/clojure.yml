@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@latest
+    - uses: actions/checkout@v2
     - uses: DeLaGuardo/setup-graalvm@3.1
       with:
         graalvm-version: '21.0.0.java11'
