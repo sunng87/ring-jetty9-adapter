@@ -1,6 +1,6 @@
 # ring-jetty9-adapter (rj9a)
 
-Ring adapter for Jetty 9 with HTTP2 and WebSocket support.
+Ring adapter for Jetty 9 and above versions, with HTTP2 and WebSocket support.
 
 This is a simple and plain wrapper on Jetty 9. It doesn't introduce
 additional thread model or anything else (no unofficial ring variance,
@@ -9,6 +9,10 @@ no core.async). You are free to add those on top of our base API.
 As of Ring 1.6, the official Jetty adapter has been updated to Jetty
 9.2. However, rj9a tracks most recent Jetty release and offers
 additional features like http/2 and websocket.
+
+Jetty 10 and 11 were released with JDK 8 support dropped. The 0.15+ will use
+Jetty 10 by default. To use JDK 8 and Jetty 9, check the `jetty-9` branch and
+`0.14` releases.
 
 ## Usage
 
