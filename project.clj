@@ -5,8 +5,8 @@
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.2"]
-                 [ring/ring-servlet "1.9.1"]
+  :dependencies [[org.clojure/clojure "1.10.3"]
+                 [ring/ring-servlet "1.9.2"]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-api ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
