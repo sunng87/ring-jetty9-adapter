@@ -16,7 +16,8 @@
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
   (ping! [this] [this msg])
-  (close! [this])
+  (close! [this]
+          [this status-code reason])
   (remote-addr [this])
   (idle-timeout! [this ms])
   (connected? [this])
@@ -121,6 +122,8 @@
      (-ping! msg this)))
   (close! [this]
     (.. this (getSession) (close)))
+  (close! [this status-code reason]
+          (.. this (getSession) (close status-code reason)))
   (remote-addr [this]
     (.. this (getSession) (getRemoteAddress)))
   (idle-timeout! [this ms]
