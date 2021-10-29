@@ -44,21 +44,35 @@
     (string? response) {:body response}
     :else response))
 
+(defn- websocket-upgrade-response? [response-map]
+  ;; HTTP 101 Switching Protocols
+  ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
+  (and (= 101 (:status response-map))
+       (= "websocket" (get-in response-map [:headers "Upgrade"]))
+       (= "Upgrade" (get-in response-map [:headers "Connection"]))))
+
 (defn ^:internal proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."
   [handler]
-  (proxy [AbstractHandler] []
-    (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
-      (try
-        (let [request-map (build-request-map request)
-              response-map (-> (handler request-map)
-                               normalize-response)]
-          (when response-map
-            (servlet/update-servlet-response response response-map)))
-        (catch Throwable e
-          (.sendError response 500 (.getMessage e)))
-        (finally
-          (.setHandled base-request true))))))
+  (doto (ServletContextHandler.)
+    (.setContextPath "/*")
+    (.setAllowNullPathInfo true)
+    (JettyWebSocketServletContainerInitializer/configure nil)
+    (.setHandler
+     (proxy [AbstractHandler] []
+       (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
+         (try
+           (let [request-map (build-request-map request)
+                 response-map (-> (handler request-map)
+                                  normalize-response)]
+             (when response-map
+               (if (websocket-upgrade-response? response-map)
+                 (ws/upgrade-websocket request response (:ws response-map) {})
+                 (servlet/update-servlet-response response response-map))))
+           (catch Throwable e
+             (.sendError response 500 (.getMessage e)))
+           (finally
+             (.setHandled base-request true))))))))
 
 (defn ^:internal proxy-async-handler
   "Returns an Jetty Handler implementation for the given Ring **async** handler."

@@ -6,7 +6,7 @@
            [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
             JettyWebSocketCreator JettyServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
-           [javax.servlet.http HttpServlet]
+           [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale]
@@ -185,18 +185,26 @@
               (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
-(defn proxy-ws-servlet [ws {:as _
-                            :keys [ws-max-idle-time
-                                   ws-max-text-message-size]
-                            :or {ws-max-idle-time 500000
-                                 ws-max-text-message-size 65536}}]
+(defn upgrade-websocket
+  [^HttpServletRequest req
+   ^HttpServletResponse res
+   ws
+   {:as _options
+    :keys [ws-max-idle-time
+           ws-max-text-message-size]
+    :or {ws-max-idle-time 500000
+         ws-max-text-message-size 65536}}]
+  {:pre [(or (map? ws) (fn? ws))]}
+  (let [creator (if (map? ws)
+                  (reify-default-ws-creator ws)
+                  (reify-custom-ws-creator ws))
+        container (JettyWebSocketServerContainer/getContainer (.getServletContext req))]
+    (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
+    (.setMaxTextMessageSize container ws-max-text-message-size)
+    (.upgrade container creator req res)))
+
+(defn proxy-ws-servlet [ws options]
   (ServletHolder.
    (proxy [HttpServlet] []
      (doGet [req res]
-       (let [creator (if (map? ws)
-                       (reify-default-ws-creator ws)
-                       (reify-custom-ws-creator ws))
-             container (JettyWebSocketServerContainer/getContainer (.getServletContext ^HttpServlet this))]
-         (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
-         (.setMaxTextMessageSize container ws-max-text-message-size)
-         (.upgrade container creator req res))))))
+       (upgrade-websocket req res ws options)))))
