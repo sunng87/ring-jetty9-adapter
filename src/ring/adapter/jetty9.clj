@@ -20,8 +20,9 @@
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
-  (:require [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
+  (:require [clojure.string :refer [lower-case]]
+            [ring.util.servlet :as servlet]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys]]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -44,12 +45,13 @@
     (string? response) {:body response}
     :else response))
 
-(defn- websocket-upgrade-response? [response-map]
+(defn- websocket-upgrade-response? [{:keys [status headers]}]
   ;; HTTP 101 Switching Protocols
   ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
-  (and (= 101 (:status response-map))
-       (= "websocket" (get-in response-map [:headers "Upgrade"]))
-       (= "Upgrade" (get-in response-map [:headers "Connection"]))))
+  (and (= 101 status)
+       (let [headers (lower-case-keys headers)]
+         (and (= "websocket" (lower-case (get headers "upgrade")))
+              (= "upgrade" (lower-case (get headers "connection")))))))
 
 (defn ^:internal proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."

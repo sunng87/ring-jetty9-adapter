@@ -1,17 +1,18 @@
 (ns rj9a.websocket-upgrade
   (:gen-class)
-  (:require [ring.adapter.jetty9 :as jetty]))
+  (:require [clojure.string :refer [lower-case]]
+            [ring.adapter.jetty9 :as jetty]))
 
 (defonce server (atom nil))
 
-(defn websocket-upgrade? [req]
-  (and (= (get-in req [:headers "upgrade"]) "websocket")
-       (= (get-in req [:headers "connection"]) "Upgrade")))
+(defn websocket-upgrade? [{:keys [headers]}]
+  (and (= "websocket" (lower-case (get headers "upgrade")))
+       (= "upgrade" (lower-case (get headers "connection")))))
 
 (defn websocket-upgrade-response [ws-handler]
   {:status 101 ;; http 101 switching protocols
-   :headers {"Upgrade" "websocket"
-             "Connection" "Upgrade"}
+   :headers {"upgrade" "websocket"
+             "connection" "upgrade"}
    :ws ws-handler})
 
 (defn my-websocket-handler [_]
