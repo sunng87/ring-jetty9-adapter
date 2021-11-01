@@ -218,8 +218,12 @@
    - upgrade: websocket
   "
   [{:keys [headers] :as _request-map}]
-  (and (= "websocket" (lower-case (get headers "upgrade")))
-       (= "upgrade" (lower-case (get headers "connection")))))
+  (let [upgrade (get headers "upgrade")
+        connection (get headers "connection")]
+    (and upgrade
+         connection
+         (= "websocket" (lower-case upgrade))
+         (= "upgrade" (lower-case connection)))))
 
 (defn ws-upgrade-response
   "Returns a websocket upgrade response.
