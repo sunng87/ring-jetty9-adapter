@@ -20,8 +20,9 @@
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
-  (:require [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
+  (:require [clojure.string :refer [lower-case]]
+            [ring.util.servlet :as servlet]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys]]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -44,39 +45,65 @@
     (string? response) {:body response}
     :else response))
 
+(defn- websocket-upgrade-response? [{:keys [status headers]}]
+  ;; HTTP 101 Switching Protocols
+  ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
+  (and (= 101 status)
+       (let [headers (lower-case-keys headers)]
+         (and (= "websocket" (lower-case (get headers "upgrade")))
+              (= "upgrade" (lower-case (get headers "connection")))))))
+
+(defn ^:internal wrap-proxy-handler
+  "Wraps a Jetty handler in a ServletContextHandler.
+   
+   Websocket upgrades require a servlet context which makes it
+   necessary to wrap the handler in a servlet context handler."
+  [jetty-handler]
+  (doto (ServletContextHandler.)
+    (.setContextPath "/*")
+    (.setAllowNullPathInfo true)
+    (JettyWebSocketServletContainerInitializer/configure nil)
+    (.setHandler jetty-handler)))
+
 (defn ^:internal proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."
   [handler]
-  (proxy [AbstractHandler] []
-    (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
-      (try
-        (let [request-map (build-request-map request)
-              response-map (-> (handler request-map)
-                               normalize-response)]
-          (when response-map
-            (servlet/update-servlet-response response response-map)))
-        (catch Throwable e
-          (.sendError response 500 (.getMessage e)))
-        (finally
-          (.setHandled base-request true))))))
+  (wrap-proxy-handler
+   (proxy [AbstractHandler] []
+     (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
+       (try
+         (let [request-map (build-request-map request)
+               response-map (-> (handler request-map)
+                                normalize-response)]
+           (when response-map
+             (if (websocket-upgrade-response? response-map)
+               (ws/upgrade-websocket request response (:ws response-map) {})
+               (servlet/update-servlet-response response response-map))))
+         (catch Throwable e
+           (.sendError response 500 (.getMessage e)))
+         (finally
+           (.setHandled base-request true)))))))
 
 (defn ^:internal proxy-async-handler
   "Returns an Jetty Handler implementation for the given Ring **async** handler."
   [handler]
-  (proxy [AbstractHandler] []
-    (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
-      (try
-        (let [^AsyncContext context (.startAsync request)]
-          (handler
-           (servlet/build-request-map request)
-           (fn [response-map]
-             (let [response-map (normalize-response response-map)]
-               (servlet/update-servlet-response response context response-map)))
-           (fn [^Throwable exception]
-             (.sendError response 500 (.getMessage exception))
-             (.complete context))))
-        (finally
-          (.setHandled base-request true))))))
+  (wrap-proxy-handler
+   (proxy [AbstractHandler] []
+     (handle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
+       (try
+         (let [^AsyncContext context (.startAsync request)]
+           (handler
+            (servlet/build-request-map request)
+            (fn [response-map]
+              (let [response-map (normalize-response response-map)]
+                (if (websocket-upgrade-response? response-map)
+                  (ws/upgrade-websocket request response context (:ws response-map) {})
+                  (servlet/update-servlet-response response context response-map))))
+            (fn [^Throwable exception]
+              (.sendError response 500 (.getMessage exception))
+              (.complete context))))
+         (finally
+           (.setHandled base-request true)))))))
 
 (defn- http-config
   "Creates jetty http configurator"

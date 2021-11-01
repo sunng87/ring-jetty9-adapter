@@ -6,12 +6,14 @@
            [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
             JettyWebSocketCreator JettyServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
-           [javax.servlet.http HttpServlet]
+           [javax.servlet AsyncContext]
+           [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale]
            [java.time Duration])
-  (:require [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map get-headers set-headers]]))
+  (:require [clojure.string :refer [lower-case]]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map get-headers set-headers]]))
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
@@ -185,18 +187,68 @@
               (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
             (proxy-ws-adapter ws-results)))))))
 
-(defn proxy-ws-servlet [ws {:as _
-                            :keys [ws-max-idle-time
-                                   ws-max-text-message-size]
-                            :or {ws-max-idle-time 500000
-                                 ws-max-text-message-size 65536}}]
+(defn upgrade-websocket
+  ([req res ws options]
+   (upgrade-websocket req res nil ws options))
+  ([^HttpServletRequest req
+    ^HttpServletResponse res
+    ^AsyncContext async-context
+    ws
+    {:as _options
+     :keys [ws-max-idle-time
+            ws-max-text-message-size]
+     :or {ws-max-idle-time 500000
+          ws-max-text-message-size 65536}}]
+   {:pre [(or (map? ws) (fn? ws))]}
+   (let [creator (if (map? ws)
+                   (reify-default-ws-creator ws)
+                   (reify-custom-ws-creator ws))
+         container (JettyWebSocketServerContainer/getContainer (.getServletContext req))]
+     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
+     (.setMaxTextMessageSize container ws-max-text-message-size)
+     (.upgrade container creator req res)
+     (when async-context
+       (.complete async-context)))))
+
+(defn proxy-ws-servlet [ws options]
   (ServletHolder.
    (proxy [HttpServlet] []
      (doGet [req res]
-       (let [creator (if (map? ws)
-                       (reify-default-ws-creator ws)
-                       (reify-custom-ws-creator ws))
-             container (JettyWebSocketServerContainer/getContainer (.getServletContext ^HttpServlet this))]
-         (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
-         (.setMaxTextMessageSize container ws-max-text-message-size)
-         (.upgrade container creator req res))))))
+       (upgrade-websocket req res ws options)))))
+
+(defn ws-upgrade-request?
+  "Checks if a request is a websocket upgrade request.
+   
+   It is a websocket upgrade request when it contains the following headers:
+   - connection: upgrade
+   - upgrade: websocket
+  "
+  [{:keys [headers] :as _request-map}]
+  (let [upgrade (get headers "upgrade")
+        connection (get headers "connection")]
+    (and upgrade
+         connection
+         (= "websocket" (lower-case upgrade))
+         (= "upgrade" (lower-case connection)))))
+
+(defn ws-upgrade-response
+  "Returns a websocket upgrade response.
+   
+   ws-handler must be a map of handler fns:
+   {:on-connect #(create-fn %)               ; ^Session ws-session
+    :on-text   #(text-fn % %2 %3 %4)         ; ^Session ws-session message
+    :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
+    :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
+    :on-error  #(error-fn % %2 %3)}          ; ^Session ws-session e
+   or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info).
+   
+   The response contains HTTP status 101 (Switching Protocols)
+   and the following headers:
+   - connection: upgrade
+   - upgrade: websocket
+   "
+  [ws-handler]
+  {:status 101 ;; http 101 switching protocols
+   :headers {"upgrade" "websocket"
+             "connection" "upgrade"}
+   :ws ws-handler})
