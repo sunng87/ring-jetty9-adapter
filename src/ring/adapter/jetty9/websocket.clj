@@ -6,6 +6,7 @@
            [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
             JettyWebSocketCreator JettyServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
+           [javax.servlet AsyncContext]
            [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
@@ -187,22 +188,27 @@
             (proxy-ws-adapter ws-results)))))))
 
 (defn upgrade-websocket
-  [^HttpServletRequest req
-   ^HttpServletResponse res
-   ws
-   {:as _options
-    :keys [ws-max-idle-time
-           ws-max-text-message-size]
-    :or {ws-max-idle-time 500000
-         ws-max-text-message-size 65536}}]
-  {:pre [(or (map? ws) (fn? ws))]}
-  (let [creator (if (map? ws)
-                  (reify-default-ws-creator ws)
-                  (reify-custom-ws-creator ws))
-        container (JettyWebSocketServerContainer/getContainer (.getServletContext req))]
-    (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
-    (.setMaxTextMessageSize container ws-max-text-message-size)
-    (.upgrade container creator req res)))
+  ([req res ws options]
+   (upgrade-websocket req res nil ws options))
+  ([^HttpServletRequest req
+    ^HttpServletResponse res
+    ^AsyncContext async-context
+    ws
+    {:as _options
+     :keys [ws-max-idle-time
+            ws-max-text-message-size]
+     :or {ws-max-idle-time 500000
+          ws-max-text-message-size 65536}}]
+   {:pre [(or (map? ws) (fn? ws))]}
+   (let [creator (if (map? ws)
+                   (reify-default-ws-creator ws)
+                   (reify-custom-ws-creator ws))
+         container (JettyWebSocketServerContainer/getContainer (.getServletContext req))]
+     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
+     (.setMaxTextMessageSize container ws-max-text-message-size)
+     (.upgrade container creator req res)
+     (when async-context
+       (.complete async-context)))))
 
 (defn proxy-ws-servlet [ws options]
   (ServletHolder.
