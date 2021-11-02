@@ -124,12 +124,20 @@ A callback can also be specified for `send!`:
 (send! ws msg {:write-failed (fn [throwable]) :write-success (fn [])})
 ```
 
- A callback is a map where keys `:write-failed` and `:write-success` are optional.
+A callback is a map where keys `:write-failed` and `:write-success`
+are optional.
 
-There is a new option `:websockets` available. Accepting a map of context path and listener class:
+In your ring app, detect a websocket handshake request and upgrade it
+with a websocket handler.
+
 ```clojure
-(use 'ring.adapter.jetty9)
-(run-jetty app {:websockets {"/loc" ws-handler}})
+(require '[ring.adapter.jetty9 :as jetty])
+
+(defn app [req]
+  (if (jetty/ws-upgrade-request? req)
+    (jetty/ws-upgrade-response ws-handler)))
+
+(run-jetty app)
 ```
 
 In the javascript:
@@ -141,10 +149,10 @@ var ws = new WebSocket("ws://somehost/loc/");
 ws.onopen = ....
 ```
 
-If you want to omit the trailing slash from your URLs (and not receive a redirect from Jetty), you can start the server like:
+If you want to omit the trailing slash from your URLs (and not receive
+a redirect from Jetty), you can start the server like:
 ```clojure
-(run-jetty app {:websockets {"/loc" ws-handler}
-                :allow-null-path-info true})
+(run-jetty app {:allow-null-path-info true})
 ```
 
 ### Websocket Handshake
@@ -152,8 +160,8 @@ If you want to omit the trailing slash from your URLs (and not receive a redirec
 Sometimes you may have a negotiation with the websocket client on the
 handshake (upgrade request) phase. You can define a ring like function
 that returns the websocket handler, or raises an error. You may also
-select a subprotocol from `(:subprotocol request)` and configure
-available `(:extensions request)`. See [websocket
+select a subprotocol from `(:websocket-subprotocol request)` and
+configure available `(:websocket-extensions request)`. See [websocket
 example](https://github.com/sunng87/ring-jetty9-adapter/blob/master/examples/rj9a/websocket.clj)
 for detail.
 
@@ -161,12 +169,12 @@ for detail.
 
 You can find examples in `examples` folder. To run example:
 
-* http: `lein with-profile default,example-http run` a very basic
+* http: `lein with-profile example-http run` a very basic
   example of ring handler
-* async: `lein with-profile default,example-async run` ring 1.6 async
+* async: `lein with-profile example-async run` ring 1.6 async
   handler example
 * http2 `lein with-profile example-http2 run`
-* websocket: `lein with-profile default,example-websocket run`
+* websocket: `lein with-profile example-websocket run`
 
 ## Contributors
 
@@ -180,6 +188,6 @@ You can find examples in `examples` folder. To run example:
 
 ## License
 
-Copyright © 2013-2017 Sun Ning
+Copyright © 2013-2021 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
