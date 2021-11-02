@@ -22,7 +22,7 @@
            [java.security KeyStore])
   (:require [clojure.string :refer [lower-case]]
             [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys]]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys =ignore-case]]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -48,14 +48,14 @@
 (defn- websocket-upgrade-response? [{:keys [status headers]}]
   ;; HTTP 101 Switching Protocols
   ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
-  (and (= 101 status)
+  (and (= 101 status) ;; check status code first
        (let [headers (lower-case-keys headers)]
-         (and (= "websocket" (lower-case (get headers "upgrade")))
-              (= "upgrade" (lower-case (get headers "connection")))))))
+         (and (=ignore-case "websocket" (get headers "upgrade"))
+              (=ignore-case "upgrade" (get headers "connection"))))))
 
 (defn ^:internal wrap-proxy-handler
   "Wraps a Jetty handler in a ServletContextHandler.
-   
+
    Websocket upgrades require a servlet context which makes it
    necessary to wrap the handler in a servlet context handler."
   [jetty-handler]
