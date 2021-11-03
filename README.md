@@ -46,17 +46,6 @@ In ns declaration:
 (run-jetty app {:port 50505 :async? true})
 ```
 
-### Use HTTP 1.1 Only
-
-If you use plain socket http 1.1 only, for example, behind an nginx
-with ssl off-loading, you can exclude HTTPs dependencies to reduce the
-uberjar size:
-
-```clojure
-:exclusions [org.eclipse.jetty/jetty-alpn-conscrypt-server
-             org.conscrypt/conscrypt-openjdk-uber]
-```
-
 ### HTTP/2
 
 ALPN is required for HTTP/2 transport, you will need additional dependency
