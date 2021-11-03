@@ -22,7 +22,7 @@
            [java.security KeyStore])
   (:require [clojure.string :refer [lower-case]]
             [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys]]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys =ignore-case]]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -32,6 +32,8 @@
 (def idle-timeout! ws/idle-timeout!)
 (def connected? ws/connected?)
 (def req-of ws/req-of)
+(def ws-upgrade-request? ws/ws-upgrade-request?)
+(def ws-upgrade-response ws/ws-upgrade-response)
 
 (extend-protocol RequestMapDecoder
   HttpServletRequest
@@ -48,14 +50,14 @@
 (defn- websocket-upgrade-response? [{:keys [status headers]}]
   ;; HTTP 101 Switching Protocols
   ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
-  (and (= 101 status)
+  (and (= 101 status) ;; check status code first
        (let [headers (lower-case-keys headers)]
-         (and (= "websocket" (lower-case (get headers "upgrade")))
-              (= "upgrade" (lower-case (get headers "connection")))))))
+         (and (=ignore-case "websocket" (get headers "upgrade"))
+              (=ignore-case "upgrade" (get headers "connection"))))))
 
 (defn ^:internal wrap-proxy-handler
   "Wraps a Jetty handler in a ServletContextHandler.
-   
+
    Websocket upgrades require a servlet context which makes it
    necessary to wrap the handler in a servlet context handler."
   [jetty-handler]
@@ -287,6 +289,8 @@
                 :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
                 :on-error  #(error-fn % %2 %3)}}         ; ^Session ws-session e
    or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info)
+   **Deprecated**: use `ring.adapter.jetty9/ws-upgrade-response` as your ring handler response to upgrade
+   a http connection to websocket.
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
   :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
