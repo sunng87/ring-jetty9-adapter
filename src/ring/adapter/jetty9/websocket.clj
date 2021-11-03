@@ -242,7 +242,8 @@
     :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
     :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
     :on-error  #(error-fn % %2 %3)}          ; ^Session ws-session e
-   or a custom creator function take upgrade request as parameter and returns a handler fns map (or error info).
+   or a custom creator function take upgrade request as parameter and returns a handler fns map,
+   negotiated subprotocol and extensions (or error info).
 
    The response contains HTTP status 101 (Switching Protocols)
    and the following headers:

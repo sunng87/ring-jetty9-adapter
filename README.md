@@ -160,8 +160,9 @@ a redirect from Jetty), you can start the server like:
 Sometimes you may have a negotiation with the websocket client on the
 handshake (upgrade request) phase. You can define a ring like function
 that returns the websocket handler, or raises an error. You may also
-select a subprotocol from `(:websocket-subprotocol request)` and
-configure available `(:websocket-extensions request)`. See [websocket
+select a subprotocol from `(:websocket-subprotocol upgrade-request)` and
+configure available `(:websocket-extensions upgrade-request)` via the
+websocket handler creator function. See [websocket
 example](https://github.com/sunng87/ring-jetty9-adapter/blob/master/examples/rj9a/websocket.clj)
 for detail.
 
