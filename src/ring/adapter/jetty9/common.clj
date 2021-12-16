@@ -30,13 +30,3 @@
              (string/join ","))))
     {}
     (enumeration-seq (.getHeaderNames request))))
-
-(defn lower-case-keys [m]
-  (->> m
-       (map #(if (string? (first %))
-               (update % 0 string/lower-case)
-               %))
-       (into {})))
-
-(defn =ignore-case [^String s1 ^String s2]
-  (.equalsIgnoreCase s1 s2))
