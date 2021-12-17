@@ -12,9 +12,9 @@
            [java.nio ByteBuffer]
            [java.util Locale]
            [java.time Duration])
-  (:require [clojure.string :refer [lower-case]]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys
-                                                get-headers set-headers =ignore-case]]))
+  (:require [clojure.string :as string]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map
+                                                get-headers set-headers]]))
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
@@ -224,14 +224,13 @@
    - connection: upgrade
    - upgrade: websocket
   "
-  [{:keys [headers] :as _request-map}]
-  (let [headers (lower-case-keys headers)
-        upgrade (get headers "upgrade")
+  [{:keys [headers]}]
+  (let [upgrade    (get headers "upgrade")
         connection (get headers "connection")]
     (and upgrade
          connection
-         (=ignore-case "websocket" upgrade)
-         (=ignore-case "upgrade" connection))))
+         (string/includes? (string/lower-case upgrade) "websocket")
+         (string/includes? (string/lower-case connection) "upgrade"))))
 
 (defn ws-upgrade-response
   "Returns a websocket upgrade response.

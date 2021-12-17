@@ -20,9 +20,8 @@
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
-  (:require [clojure.string :refer [lower-case]]
-            [ring.util.servlet :as servlet]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map lower-case-keys =ignore-case]]
+  (:require [ring.util.servlet :as servlet]
+            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -47,13 +46,11 @@
     (string? response) {:body response}
     :else response))
 
-(defn- websocket-upgrade-response? [{:keys [status headers]}]
-  ;; HTTP 101 Switching Protocols
-  ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
-  (and (= 101 status) ;; check status code first
-       (let [headers (lower-case-keys headers)]
-         (and (=ignore-case "websocket" (get headers "upgrade"))
-              (=ignore-case "upgrade" (get headers "connection"))))))
+(defn- websocket-upgrade-response?
+  [{:keys [status ws]}]
+  ;; NOTE: we know that when :ws attr is provided in the response, we
+  ;; need to upgrade to websockets protocol.
+  (and (= 101 status) ws))
 
 (defn ^:internal wrap-proxy-handler
   "Wraps a Jetty handler in a ServletContextHandler.
