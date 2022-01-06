@@ -12,7 +12,8 @@
                  [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
-                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]]
+                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
+                 [org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
@@ -20,8 +21,7 @@
                                   [org.slf4j/slf4j-simple "2.0.0-alpha5"]
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
-                             :main ^:skip-aot rj9a.http2
-                             :dependencies [[org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]}
+                             :main ^:skip-aot rj9a.http2}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]

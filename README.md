@@ -48,8 +48,9 @@ In ns declaration:
 
 ### HTTP/2
 
-ALPN is required for HTTP/2 transport, you will need additional dependency
-to enable ALPN.
+ALPN is required for HTTP/2 transport, For rj9a versions before
+`0.17`, you will need additional dependency to enable ALPN. Add
+following dependencies according to the jdk version you use.
 
 * For JDK 11 and above, add `[org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]`
 * For OpenJDK 8u252 and above, add `[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]`
@@ -61,6 +62,9 @@ now because of [memory leak issue](https://github.com/google/conscrypt/issues/83
 
 Note your will need to replace `~jetty-version` with corresponding jetty version that
 your version of rj9a uses.
+
+For rj9a version `0.17.1` and newer,
+`org.eclipse.jetty/jetty-alpn-java-server` is included by default.
 
 To enable HTTP/2 on cleartext and secure transport, you can simply add
 options to `run-jetty` like:
