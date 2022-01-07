@@ -8,4 +8,5 @@
   (jetty/run-jetty dummy-app {:port 5000 :h2c? true :h2? true :ssl? true :ssl-port 5443
                               :keystore "dev-resources/keystore.jks"
                               :key-password "111111"
-                              :keystore-type "jks"}))
+                              :keystore-type "jks"
+                              :sni-host-check? false}))
