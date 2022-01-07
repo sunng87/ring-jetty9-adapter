@@ -4,7 +4,7 @@
   (:import [org.eclipse.jetty.server
             Server Request ServerConnector
             HttpConfiguration HttpConnectionFactory
-            ConnectionFactory
+            ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
            [org.eclipse.jetty.servlet ServletContextHandler ServletHandler]
            [org.eclipse.jetty.util.thread
@@ -109,7 +109,7 @@
   [{:as _
     :keys [ssl-port secure-scheme output-buffer-size request-header-size
            response-header-size send-server-version? send-date-header?
-           header-cache-size]
+           header-cache-size sni-required? sni-host-check?]
     :or {ssl-port 443
          secure-scheme "https"
          output-buffer-size 32768
@@ -117,16 +117,22 @@
          response-header-size 8192
          send-server-version? true
          send-date-header? false
-         header-cache-size 512}}]
-  (doto (HttpConfiguration.)
-    (.setSecureScheme secure-scheme)
-    (.setSecurePort ssl-port)
-    (.setOutputBufferSize output-buffer-size)
-    (.setRequestHeaderSize request-header-size)
-    (.setResponseHeaderSize response-header-size)
-    (.setSendServerVersion send-server-version?)
-    (.setSendDateHeader send-date-header?)
-    (.setHeaderCacheSize header-cache-size)))
+         header-cache-size 512
+         sni-required? false
+         sni-host-check? true}}]
+  (let [secure-customizer (doto (SecureRequestCustomizer.)
+                            (.setSniRequired sni-required?)
+                            (.setSniHostCheck sni-host-check?))]
+    (doto (HttpConfiguration.)
+      (.setSecureScheme secure-scheme)
+      (.setSecurePort ssl-port)
+      (.setOutputBufferSize output-buffer-size)
+      (.setRequestHeaderSize request-header-size)
+      (.setResponseHeaderSize response-header-size)
+      (.setSendServerVersion send-server-version?)
+      (.setSendDateHeader send-date-header?)
+      (.setHeaderCacheSize header-cache-size)
+      (.addCustomizer secure-customizer))))
 
 (defn- detect-ssl-provider []
   (try
@@ -283,6 +289,8 @@
   :h2c? - enable http2 clear text on plain socket port
   :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
   :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
+  :sni-required? - require sni for secure connection, default to false
+  :sni-host-check? - enable host check for secure connection, default to true
   "
   [handler {:as options
             :keys [configurator join? async?
