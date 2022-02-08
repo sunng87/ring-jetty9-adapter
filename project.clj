@@ -6,12 +6,13 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.3"]
-                 [ring/ring-servlet "1.9.4"]
+                 [ring/ring-servlet "1.9.5" :exclusions [commons-io]]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-api ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
+                 [org.eclipse.jetty.http3/http3-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
@@ -23,6 +24,8 @@
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
+             :example-http3 {:source-paths ["examples/"]
+                             :main ^:skip-aot rj9a.http3}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
