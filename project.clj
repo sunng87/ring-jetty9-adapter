@@ -12,7 +12,6 @@
                  [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
-                 [org.eclipse.jetty.http3/http3-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
