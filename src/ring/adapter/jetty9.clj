@@ -17,9 +17,6 @@
            [org.eclipse.jetty.http2 HTTP2Cipher]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
-           [org.eclipse.jetty.http3.server
-            RawHTTP3ServerConnectionFactory HTTP3ServerConnector]
-           [org.eclipse.jetty.http3.api Session$Server$Listener]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
   (:require [clojure.string :as string]
@@ -220,14 +217,20 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
-(defn- http3-connector [server ssl-context-factory port host]
-  (let [listener (reify Session$Server$Listener)
-        connection-factory (RawHTTP3ServerConnectionFactory. listener)
-        connector (HTTP3ServerConnector. server ssl-context-factory
-                                         (into-array RawHTTP3ServerConnectionFactory [connection-factory]))]
-    (doto connector
-      (.setPort port)
-      (.setHost host))))
+;; (defn- http3-connector [server ssl-context-factory port host]
+;;   (let [listener (reify Session$Server$Listener)
+;;         connection-factory (RawHTTP3ServerConnectionFactory. listener)
+;;         connector (HTTP3ServerConnector. server ssl-context-factory
+;;                                          (into-array RawHTTP3ServerConnectionFactory [connection-factory]))]
+;;     (doto connector
+;;       (.setPort port)
+;;       (.setHost host))))
+
+(defn- http3-connector [& args]
+  ;; load http3 module dynamically
+  (require 'ring.adapter.jetty9.http3)
+  (let [http3-connector* @(ns-resolve 'ring.adapter.jetty9.http3 'http3-connector)]
+    (apply http3-connector* args)))
 
 (defn- create-server
   "Construct a Jetty Server instance."
