@@ -5,10 +5,8 @@
             HTTP3ServerConnectionFactory HTTP3ServerConnector]
            [org.eclipse.jetty.http3.api Session$Server$Listener]))
 
-(defn http3-connector [server ssl-context-factory port host]
-  (let [http-config (doto (HttpConfiguration.)
-                      (.addCustomizer (SecureRequestCustomizer.)))
-        connection-factory (HTTP3ServerConnectionFactory. http-config)
+(defn http3-connector [server http-configuration ssl-context-factory port host]
+  (let [connection-factory (HTTP3ServerConnectionFactory. http-configuration)
         connector (HTTP3ServerConnector. server ssl-context-factory
                                          (into-array HTTP3ServerConnectionFactory [connection-factory]))]
     (doto connector

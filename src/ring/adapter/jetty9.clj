@@ -217,15 +217,6 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
-;; (defn- http3-connector [server ssl-context-factory port host]
-;;   (let [listener (reify Session$Server$Listener)
-;;         connection-factory (RawHTTP3ServerConnectionFactory. listener)
-;;         connector (HTTP3ServerConnector. server ssl-context-factory
-;;                                          (into-array RawHTTP3ServerConnectionFactory [connection-factory]))]
-;;     (doto connector
-;;       (.setPort port)
-;;       (.setHost host))))
-
 (defn- http3-connector [& args]
   ;; load http3 module dynamically
   (require 'ring.adapter.jetty9.http3)
@@ -264,7 +255,7 @@
                      ssl?  (conj (https-connector server http-configuration ssl-factory
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
-                     http3? (conj (http3-connector server ssl-factory ssl-port host)))]
+                     http3? (conj (http3-connector server http-configuration ssl-factory ssl-port host)))]
     (.setConnectors server (into-array Connector connectors))
     server))
 
