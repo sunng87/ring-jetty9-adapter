@@ -19,8 +19,7 @@
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
   (ping! [this] [this msg])
-  (close! [this]
-          [this status-code reason])
+  (close! [this] [this status-code reason])
   (remote-addr [this])
   (idle-timeout! [this ms])
   (connected? [this])
@@ -123,10 +122,11 @@
      (-ping! (ByteBuffer/allocate 0) this))
     ([this msg]
      (-ping! msg this)))
-  (close! [this]
-    (.. this (getSession) (close)))
-  (close! [this status-code reason]
-          (.. this (getSession) (close status-code reason)))
+  (close!
+    ([this]
+     (.. this (getSession) (close)))
+    ([this status-code reason]
+     (.. this (getSession) (close status-code reason))))
   (remote-addr [this]
     (.. this (getSession) (getRemoteAddress)))
   (idle-timeout! [this ms]
