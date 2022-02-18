@@ -1,4 +1,4 @@
-(def jetty-version "10.0.8")
+(def jetty-version "10.0.9-SNAPSHOT")
 
 (defproject info.sunng/ring-jetty9-adapter "0.17.6-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -20,7 +20,7 @@
   :jvm-args ["-Xmx128m"]
   :profiles {:dev {:dependencies [[clj-http "3.12.3"]
                                   [less-awful-ssl "1.0.6"]
-                                  [org.slf4j/slf4j-simple "2.0.0-alpha5"]
+                                  [org.slf4j/slf4j-simple "2.0.0-alpha6"]
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
