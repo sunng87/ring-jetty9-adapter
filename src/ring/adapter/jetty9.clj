@@ -146,7 +146,8 @@
   [{:as options
     :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type ssl-protocols ssl-provider
-           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?]}]
+           exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?
+           ssl-context]}]
   (let [context-server (SslContextFactory$Server.)]
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
     (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
@@ -168,6 +169,8 @@
       (.setTrustStorePassword context-server trust-password))
     (when truststore-type
       (.setTrustStoreType context-server truststore-type))
+    (when ssl-context
+      (.setSslContext context-server ssl-context))
     (case client-auth
       :need (.setNeedClientAuth context-server true)
       :want (.setWantClientAuth context-server true)
@@ -257,6 +260,7 @@
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
   :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
+  :ssl-context - an optional SSLContext to use for SSL connections
   :keystore - the keystore to use for SSL connections
   :keystore-type - the format of keystore
   :key-password - the password to the keystore
