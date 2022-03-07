@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [ring.adapter.jetty9 :as jetty9]
             [clj-http.client :as client]
+            [less.awful.ssl :as less-ssl]
             #_[gniazdo.core :as ws]))
 
 (defn dummy-app [req]
@@ -29,6 +30,11 @@
     (let [resp (client/get "http://localhost:50524/")]
       (is (= 200 (:status resp))))))
 
+(defn ssl-context []
+  (less-ssl/ssl-context "dev-resources/test/key.pem"
+                        "dev-resources/test/cert.pem"
+                        "dev-resources/test/cert.pem"))
+
 (deftest keystore-and-truststore-test
   (with-jetty [server [dummy-app {:ssl-port        50524
                                   :http?           false
@@ -44,6 +50,28 @@
     (is server)
     (let [resp (client/get "https://localhost:50524/" {:insecure? true})]
       (is (= 200 (:status resp))))))
+
+(deftest ssl-context-test
+  (with-jetty [server [dummy-app {:ssl-port        50524
+                                  :http?           false
+                                  :ssl             true
+                                  :join?           false
+                                  :websockets      {"/path" websocket-handler}
+                                  :ssl-context     (ssl-context)}]]
+    (is server)
+    (let [resp (client/get "https://localhost:50524/" {:insecure? true})]
+      (is (= 200 (:status resp))))
+    (let [resp (client/get "https://localhost:50524/"
+                           {:keystore "dev-resources/test/my-keystore.jks"
+                            :keystore-pass "password"
+                            :trust-store "dev-resources/test/my-truststore.jks"
+                            :trust-store-pass "password"})]
+      (is (= 200 (:status resp))))
+    (is (thrown-with-msg?
+         Exception
+         #"unable to find valid certification path to requested target"
+          (client/get "https://localhost:50524/")))))
+
 
 #_(deftest websocket-test
   (with-jetty [server [dummy-app {:port       50524

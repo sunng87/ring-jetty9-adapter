@@ -18,6 +18,7 @@
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
   :profiles {:dev {:dependencies [[clj-http "3.12.3"]
+                                  [less-awful-ssl "1.0.6"]
                                   [org.slf4j/slf4j-simple "2.0.0-alpha5"]
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
