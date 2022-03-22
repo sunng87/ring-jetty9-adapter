@@ -7,6 +7,7 @@
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
            [org.eclipse.jetty.servlet ServletContextHandler ServletHandler]
+           [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
@@ -19,7 +20,8 @@
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
-  (:require [ring.util.servlet :as servlet]
+  (:require [clojure.string :as string]
+            [ring.util.servlet :as servlet]
             [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
             [ring.adapter.jetty9.websocket :as ws]))
 
@@ -152,8 +154,11 @@
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
     (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
       (.setProvider context-server ssl-provider))
+    ;; classpath support
     (if (string? keystore)
-      (.setKeyStorePath context-server keystore)
+      (if (string/starts-with? keystore "classpath:")
+        (.setKeyStoreResource context-server (Resource/newSystemResource (subs keystore 10)))
+        (.setKeyStorePath context-server keystore))
       (.setKeyStore context-server ^KeyStore keystore))
     (when (string? keystore-type)
       (.setKeyStoreType context-server keystore-type))
