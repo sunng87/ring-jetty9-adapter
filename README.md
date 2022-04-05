@@ -83,13 +83,13 @@ options to `run-jetty` like:
 
 ### HTTP/3
 
-From 10.0.8, Jetty ships an expiremental HTTP/3 implementation based
-on [the quiche library](https://github.com/cloudflare/quiche). rj9a
-made it an optional feature. To enable HTTP/3 support, you will need
-to:
+From 10.0.9, Jetty ships a usable expiremental HTTP/3 implementation
+based on [the quiche
+library](https://github.com/cloudflare/quiche). rj9a made it an
+optional feature. To enable HTTP/3 support, you will need to:
 
-* Install libquiche 0.11.0 on your system and make sure `libquiche.so`
-  can be loaded from the Clojure(Java) application.
+* Install libquiche on your system and make sure `libquiche.so` can be
+  loaded from the Clojure(Java) application.
 * In addition to rj9a, add dependency
   `[info.sunng/ring-jetty9-adapter-http3 "0.1.0"]` to your clojure
   project to bring in HTTP/3 staff.
