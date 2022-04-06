@@ -16,6 +16,8 @@ jobs:
         graalvm-version: '21.0.0.java11'
     - uses: DeLaGuardo/setup-clojure@master
       with:
-        lein: 2.9.5
+        lein: 2.9.8
+    - name: Install modules
+      run: cd http3; lein install
     - name: Run tests
       run: lein test

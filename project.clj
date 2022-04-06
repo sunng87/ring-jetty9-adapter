@@ -1,4 +1,4 @@
-(def jetty-version "10.0.8")
+(def jetty-version "10.0.9")
 
 (defproject info.sunng/ring-jetty9-adapter "0.17.6-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -6,7 +6,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.3"]
-                 [ring/ring-servlet "1.9.4"]
+                 [ring/ring-servlet "1.9.5" :exclusions [commons-io]]
+                 [info.sunng/ring-jetty9-adapter-http3 "0.1.0-SNAPSHOT" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-api ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
@@ -19,10 +20,12 @@
   :jvm-args ["-Xmx128m"]
   :profiles {:dev {:dependencies [[clj-http "3.12.3"]
                                   [less-awful-ssl "1.0.6"]
-                                  [org.slf4j/slf4j-simple "2.0.0-alpha5"]
+                                  [org.slf4j/slf4j-simple "2.0.0-alpha6"]
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
+             :example-http3 {:source-paths ["examples/"]
+                             :main ^:skip-aot rj9a.http3}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]

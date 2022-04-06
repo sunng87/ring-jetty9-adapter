@@ -1,6 +1,7 @@
 # ring-jetty9-adapter (rj9a)
 
-Ring adapter for Jetty 9 and above versions, with HTTP2 and WebSocket support.
+Ring adapter for Jetty 10 and above versions, with HTTP/3, WebSocket and
+Expiremental HTTP/3 support.
 
 This is a simple and plain wrapper on Jetty 9. It doesn't introduce
 additional thread model or anything else (no unofficial ring variance,
@@ -79,6 +80,37 @@ options to `run-jetty` like:
                             :key-password "111111"
                             :keystore-type "jks"})
 ```
+
+### HTTP/3
+
+From 10.0.9, Jetty ships a usable expiremental HTTP/3 implementation
+based on [the quiche
+library](https://github.com/cloudflare/quiche). rj9a made it an
+optional feature. To enable HTTP/3 support, you will need to:
+
+* Install libquiche on your system and make sure `libquiche.so` can be
+  loaded from the Clojure(Java) application.
+* In addition to rj9a, add dependency
+  `[info.sunng/ring-jetty9-adapter-http3 "0.1.0"]` to your clojure
+  project to bring in HTTP/3 staff.
+* Provide certficate and key just like HTTPs setup because HTTP/3 is
+  secure by default. There is no plaintext fallback for now.
+* Provide option `:http3? true` to `run-jetty` to enable HTTP/3
+  protocol.
+
+```clojure
+(jetty/run-jetty dummy-app {:port 5000  ;; default clear-text http/1.1 port
+                            :http3 true  ;; enable http/3 support
+                            :ssl-port 5443 ;; ssl-port is used by http/3
+                            :keystore "dev-resources/keystore.jks"
+                            :key-password "111111"
+                            :keystore-type "jks"})
+```
+
+Since HTTP/3 runs on UDP, it could share same port with TCP based
+protocol like HTTP/2 or 1.1.
+
+An example is available in `examples` folder.
 
 ### WebSocket
 
@@ -168,6 +200,7 @@ You can find examples in `examples` folder. To run example:
 * async: `lein with-profile example-async run` ring 1.6 async
   handler example
 * http2 `lein with-profile example-http2 run`
+* http3 `lein with-profile example-http3 run`
 * websocket: `lein with-profile example-websocket run`
 
 ## Contributors

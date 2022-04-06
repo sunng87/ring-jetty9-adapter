@@ -1,8 +1,8 @@
 (ns ring.adapter.jetty9
-  "Adapter for the Jetty 9 server, with websocket support.
+  "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
   (:import [org.eclipse.jetty.server
-            Server Request ServerConnector
+            Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
@@ -14,8 +14,7 @@
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [javax.servlet.http HttpServletRequest HttpServletResponse]
            [javax.servlet AsyncContext]
-           [org.eclipse.jetty.http2
-            HTTP2Cipher]
+           [org.eclipse.jetty.http2 HTTP2Cipher]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
@@ -218,12 +217,18 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
+(defn- http3-connector [& args]
+  ;; load http3 module dynamically
+  (require 'ring.adapter.jetty9.http3)
+  (let [http3-connector* @(ns-resolve 'ring.adapter.jetty9.http3 'http3-connector)]
+    (apply http3-connector* args)))
+
 (defn- create-server
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
            daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?
-           thread-pool]
+           thread-pool http3?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -245,11 +250,13 @@
                  (.addBean (ScheduledExecutorScheduler.)))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
+        ssl-factory (ssl-context-factory options)
         connectors (cond-> []
-                     ssl?  (conj (https-connector server http-configuration (ssl-context-factory options)
+                     ssl?  (conj (https-connector server http-configuration ssl-factory
                                                   h2? ssl-port host max-idle-time))
-                     http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?)))]
-    (.setConnectors server (into-array connectors))
+                     http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
+                     http3? (conj (http3-connector server http-configuration ssl-factory ssl-port host)))]
+    (.setConnectors server (into-array Connector connectors))
     server))
 
 (defn ^Server run-jetty
@@ -300,7 +307,7 @@
   :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   :sni-required? - require sni for secure connection, default to false
   :sni-host-check? - enable host check for secure connection, default to true
-  "
+  :http3? - enable http3 protocol"
   [handler {:as options
             :keys [configurator join? async?
                    allow-null-path-info wrap-jetty-handler]
