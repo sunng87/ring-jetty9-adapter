@@ -1,6 +1,6 @@
 # ring-jetty9-adapter (rj9a)
 
-Ring adapter for Jetty 10 and above versions, with HTTP/3, WebSocket and
+Ring adapter for Jetty 10 and above versions, with HTTP/2, WebSocket and
 Expiremental HTTP/3 support.
 
 This is a simple and plain wrapper on Jetty 9. It doesn't introduce
