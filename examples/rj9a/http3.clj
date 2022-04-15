@@ -6,7 +6,7 @@
 
 (defn -main [& args]
   (jetty/run-jetty dummy-app {:port 5000 :http false :http3? true :ssl-port 5443
-                              :keystore "dev-resources/keystore.jks"
+                              :keystore "classpath:/keystore.jks"
                               :key-password "111111"
                               :keystore-type "jks"
                               :sni-host-check? false}))
