@@ -20,15 +20,17 @@
   :jvm-args ["-Xmx128m"]
   :profiles {:dev {:dependencies [[clj-http "3.12.3"]
                                   [less-awful-ssl "1.0.6"]
-                                  [org.slf4j/slf4j-simple "2.0.0-alpha6"]
+                                  #_[org.slf4j/slf4j-simple "2.0.0-alpha6"]
                                   #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
              :example-http3 {:source-paths ["examples/"]
+                             :resource-paths ["dev-resources/"]
                              :main ^:skip-aot rj9a.http3}
              :example-websocket {:source-paths ["examples/"]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
                             :main ^:skip-aot rj9a.http}
              :example-async {:source-paths ["examples/"]
-                             :main ^:skip-aot rj9a.async}})
+                             :main ^:skip-aot rj9a.async}
+             :uberjar {:aot :all}})
