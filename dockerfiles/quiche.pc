@@ -1,0 +1,5 @@
+Name: quiche
+Description: quiche library
+URL: https://github.com/cloudflare/quiche
+Version: 0.12.0
+Libs: -lquiche
