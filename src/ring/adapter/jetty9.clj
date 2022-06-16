@@ -67,7 +67,7 @@
 
 (defn ^:internal proxy-handler
   "Returns an Jetty Handler implementation for the given Ring handler."
-  [handler]
+  [handler options]
   (wrap-proxy-handler
    (proxy [ServletHandler] []
      (doHandle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
@@ -77,7 +77,7 @@
                                 normalize-response)]
            (when response-map
              (if (websocket-upgrade-response? response-map)
-               (ws/upgrade-websocket request response (:ws response-map) {})
+               (ws/upgrade-websocket request response (:ws response-map) options)
                (servlet/update-servlet-response response response-map))))
          (catch Throwable e
            (.sendError response 500 (.getMessage e)))
@@ -86,7 +86,7 @@
 
 (defn ^:internal proxy-async-handler
   "Returns an Jetty Handler implementation for the given Ring **async** handler."
-  [handler]
+  [handler options]
   (wrap-proxy-handler
    (proxy [ServletHandler] []
      (doHandle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
@@ -97,7 +97,7 @@
             (fn [response-map]
               (let [response-map (normalize-response response-map)]
                 (if (websocket-upgrade-response? response-map)
-                  (ws/upgrade-websocket request response context (:ws response-map) {})
+                  (ws/upgrade-websocket request response context (:ws response-map) options)
                   (servlet/update-servlet-response response context response-map))))
             (fn [^Throwable exception]
               (.sendError response 500 (.getMessage exception))
@@ -316,7 +316,7 @@
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         ring-app-handler (wrap-jetty-handler
-                          (if async? (proxy-async-handler handler) (proxy-handler handler)))]
+                          (if async? (proxy-async-handler handler options) (proxy-handler handler options)))]
     (.setHandler s ring-app-handler)
     (when-let [c configurator]
       (c s))
