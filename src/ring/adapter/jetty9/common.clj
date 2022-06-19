@@ -22,11 +22,11 @@
   "Creates a name/value map of all the request headers."
   [^HttpServletRequest request]
   (reduce
-    (fn [headers, ^String name]
-      (assoc headers
-        (.toLowerCase name Locale/ENGLISH)
-        (->> (.getHeaders request name)
-             (enumeration-seq)
-             (string/join ","))))
-    {}
-    (enumeration-seq (.getHeaderNames request))))
+   (fn [headers, ^String name]
+     (assoc headers
+            (.toLowerCase name Locale/ENGLISH)
+            (->> (.getHeaders request name)
+                 (enumeration-seq)
+                 (string/join ","))))
+   {}
+   (enumeration-seq (.getHeaderNames request))))

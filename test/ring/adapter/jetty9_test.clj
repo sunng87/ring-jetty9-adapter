@@ -70,16 +70,15 @@
     (is (thrown-with-msg?
          Exception
          #"unable to find valid certification path to requested target"
-          (client/get "https://localhost:50524/")))))
-
+         (client/get "https://localhost:50524/")))))
 
 #_(deftest websocket-test
-  (with-jetty [server [dummy-app {:port       50524
-                                  :join?      false
-                                  :websockets {"/path" websocket-handler}}]]
-    (is server)
-    (let [resp-promise (promise)]
-      (with-open [socket (ws/connect "ws://localhost:50524/path/"
-                                     :on-receive #(deliver resp-promise %))]
-        (ws/send-msg socket "hello")
-        (is (= "hello" (deref resp-promise 20000 false)))))))
+    (with-jetty [server [dummy-app {:port       50524
+                                    :join?      false
+                                    :websockets {"/path" websocket-handler}}]]
+      (is server)
+      (let [resp-promise (promise)]
+        (with-open [socket (ws/connect "ws://localhost:50524/path/"
+                                       :on-receive #(deliver resp-promise %))]
+          (ws/send-msg socket "hello")
+          (is (= "hello" (deref resp-promise 20000 false)))))))
