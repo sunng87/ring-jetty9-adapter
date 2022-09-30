@@ -130,7 +130,7 @@
   (remote-addr [this]
     (.. this (getSession) (getRemoteAddress)))
   (idle-timeout! [this ms]
-    (.. this (getSession) (setIdleTimeout ^long ms)))
+    (.. this (getSession) (setIdleTimeout (java.time.Duration/ofMillis ^long ms))))
   (connected? [this]
     (. this (isConnected)))
   (req-of [this]
