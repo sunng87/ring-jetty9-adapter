@@ -12,8 +12,8 @@
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
-           [javax.servlet.http HttpServletRequest HttpServletResponse]
-           [javax.servlet AsyncContext]
+           [jakarta.servlet.http HttpServletRequest HttpServletResponse]
+           [jakarta.servlet AsyncContext]
            [org.eclipse.jetty.http2 HTTP2Cipher]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]

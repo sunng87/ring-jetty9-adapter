@@ -2,8 +2,8 @@
   (:require [clojure.string :as string]
             [ring.adapter.jetty9.common :as common]
             [ring.core.protocols :as protocols])
-  (:import [javax.servlet AsyncContext]
-           [javax.servlet.http HttpServletRequest HttpServletResponse]
+  (:import [jakarta.servlet AsyncContext]
+           [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [java.util Locale]))
 
 (defn- get-content-length
@@ -15,7 +15,7 @@
 (defn- get-client-cert
   "Returns the SSL client certificate of the request, if one exists."
   [^HttpServletRequest request]
-  (first (.getAttribute request "javax.servlet.request.X509Certificate")))
+  (first (.getAttribute request "jakarta.servlet.request.X509Certificate")))
 
 (defn build-request-map
   "Create the request map from the HttpServletRequest object."

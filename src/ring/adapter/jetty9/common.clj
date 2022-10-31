@@ -1,6 +1,6 @@
 (ns ring.adapter.jetty9.common
   (:require [clojure.string :as string])
-  (:import [javax.servlet.http HttpServletRequest HttpServletResponse]
+  (:import [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [java.util Locale]))
 
 (defprotocol RequestMapDecoder
