@@ -20,8 +20,8 @@
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
   (:require [clojure.string :as string]
-            [ring.util.servlet :as servlet]
             [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
+            [ring.adapter.jetty9.servlet :as servlet]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
