@@ -6,8 +6,8 @@
            [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
             JettyWebSocketCreator JettyServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
-           [javax.servlet AsyncContext]
-           [javax.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
+           [jakarta.servlet AsyncContext]
+           [jakarta.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale]
@@ -105,7 +105,7 @@
                             :protocol (.getProtocol servlet-request)
                             :headers (get-headers servlet-request)
                             :ssl-client-cert (first (.getAttribute servlet-request
-                                                                   "javax.servlet.request.X509Certificate"))}]
+                                                                   "jakarta.servlet.request.X509Certificate"))}]
       (assoc base-request-map
              :websocket-subprotocols (into [] (.getSubProtocols request))
              :websocket-extensions (into [] (.getExtensions request))))))

@@ -12,16 +12,16 @@
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
-           [javax.servlet.http HttpServletRequest HttpServletResponse]
-           [javax.servlet AsyncContext]
+           [jakarta.servlet.http HttpServletRequest HttpServletResponse]
+           [jakarta.servlet AsyncContext]
            [org.eclipse.jetty.http2 HTTP2Cipher]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
   (:require [clojure.string :as string]
-            [ring.util.servlet :as servlet]
             [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
+            [ring.adapter.jetty9.servlet :as servlet]
             [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
