@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/github/license/sunng87/ring-jetty9-adapter.svg?maxAge=2592000)]()
 [![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
 
-Ring adapter for Jetty 10 (although named as jetty9), with HTTP/2,
+Ring adapter for Jetty 11 (although named as jetty9), with HTTP/2,
 WebSocket and experimental HTTP/3 support.
 
 This is a simple and plain wrapper on modern Jetty versions. It
