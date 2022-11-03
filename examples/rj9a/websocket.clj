@@ -25,7 +25,7 @@
      ;; select subprotocol
      :subprotocol (first provided-subprotocols)
      ;; exntension negotiation
-     :extentions provided-extensions}))
+     :extensions provided-extensions}))
 
 (defn handler [req]
   (if (jetty/ws-upgrade-request? req)
