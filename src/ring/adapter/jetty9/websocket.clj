@@ -185,7 +185,10 @@
             (when-let [sp (:subprotocol ws-results)]
               (.setAcceptedSubProtocol resp sp))
             (when-let [exts (not-empty (:extensions ws-results))]
-              (.setExtensions resp (mapv #(JettyExtensionConfig. ^String %) exts)))
+              (.setExtensions resp (mapv #(if (string? %)
+                                            (JettyExtensionConfig. ^String %)
+                                            %)
+                                         exts)))
             (proxy-ws-adapter ws-results)))))))
 
 (defn upgrade-websocket
