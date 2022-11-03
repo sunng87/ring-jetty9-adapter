@@ -7,7 +7,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ring/ring-core "1.9.6" :exclusions [commons-io]]
-                 [info.sunng/ring-jetty9-adapter-http3 "0.1.1" :optional true]
+                 [info.sunng/ring-jetty9-adapter-http3 "0.2.0" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-api ~jetty-version]
                  [org.eclipse.jetty.websocket/websocket-jetty-server ~jetty-version]
