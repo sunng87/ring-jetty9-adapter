@@ -292,7 +292,7 @@
   :replace-exclude-protocols? - when true, :exclude-protocols will replace
                                 rather than add to the protocols exclusion list
                                 (defaults to false)
-  :thread-pool - the thread pool for Jetty workload
+  :thread-pool - the thread pool for Jetty workload, accepts an instance of `org.eclipse.jetty.util.thread.ThreadPool`
   :max-threads - the maximum number of threads to use (default 50), ignored if `:thread-pool` provided
   :min-threads - the minimum number of threads to use (default 8), ignored if `:thread-pool` provided
   :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000), ignored if `:thread-pool` provided
@@ -307,7 +307,7 @@
   :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   :sni-required? - require sni for secure connection, default to false
   :sni-host-check? - enable host check for secure connection, default to true
-  :http3? - enable http3 protocol"
+  :http3? - enable http3 protocol, make sure you have `info.sunng/ring-jetty9-adapter-http3` package on classpath"
   [handler {:as options
             :keys [configurator join? async?
                    allow-null-path-info wrap-jetty-handler]
