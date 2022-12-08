@@ -198,9 +198,9 @@
                                                      (HTTP2ServerConnectionFactory. http-configuration)])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
-           ^Server server
-           ^SslContextFactory ssl-context-factory
-           ^"[Lorg.eclipse.jetty.server.ConnectionFactory;" (into-array ConnectionFactory secure-connection-factory))
+            ^Server server
+            ^SslContextFactory$Server ssl-context-factory
+            ^"[Lorg.eclipse.jetty.server.ConnectionFactory;" (into-array ConnectionFactory secure-connection-factory))
       (.setPort port)
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
