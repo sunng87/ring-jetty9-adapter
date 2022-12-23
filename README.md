@@ -103,8 +103,10 @@ will need to:
   image](https://hub.docker.com/repository/docker/sunng/quiche-jdk-17)
   with compiled quiche library and JDK ready for use.
 * In addition to rj9a, add dependency
-  `[info.sunng/ring-jetty9-adapter-http3 "0.1.0"]` to your clojure
-  project to bring in HTTP/3 staff.
+  `[info.sunng/ring-jetty9-adapter-http3 "VERSION"]` to your clojure
+  project to bring in HTTP/3 staff. Remember to replace `VERSION` with our
+  latest release, which can be checked
+  [here](https://clojars.org/info.sunng/ring-jetty9-adapter-http3)
 * Provide certficate and key just like HTTPs setup because HTTP/3 is
   secure by default. There is no plaintext fallback for now.
 * Provide option `:http3? true` to `run-jetty` to enable HTTP/3
