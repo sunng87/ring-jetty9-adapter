@@ -86,12 +86,15 @@
 
 (defn ^:internal proxy-async-handler
   "Returns an Jetty Handler implementation for the given Ring **async** handler."
-  [handler options]
+  [handler {:as options
+            :keys [async-timeout]
+            :or {async-timeout 30000}}]
   (wrap-proxy-handler
    (proxy [ServletHandler] []
      (doHandle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
        (try
-         (let [^AsyncContext context (.startAsync request)]
+         (let [^AsyncContext context (doto (.startAsync request)
+                                       (.setTimeout async-timeout))]
            (handler
             (servlet/build-request-map request)
             (fn [response-map]
@@ -268,6 +271,7 @@
   :port - the port to listen on (defaults to 80)
   :host - the hostname to listen on
   :async? - using Ring 1.6 async handler?
+  :async-timeout - the maximum time in milliseconds for an async request (default 30000)
   :join? - blocks the thread until server ends (defaults to true)
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
