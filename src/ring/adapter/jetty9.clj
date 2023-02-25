@@ -253,6 +253,7 @@
                  (.addBean (ScheduledExecutorScheduler.)))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
+        ssl-port (or ssl-port (when ssl? 443))
         ssl-factory (ssl-context-factory options)
         connectors (cond-> []
                      ssl?  (conj (https-connector server http-configuration ssl-factory
