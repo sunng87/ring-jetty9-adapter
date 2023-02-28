@@ -11,7 +11,7 @@ pom.xml.asc
 .lein-plugins
 .lein-repl-history
 .lein-env
-
+*~
 .idea/
 *.iml
 /.nrepl-port
