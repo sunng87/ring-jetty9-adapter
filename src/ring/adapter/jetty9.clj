@@ -276,7 +276,7 @@
              (->> (reify Consumer (accept [_ scf] (callback scf)))
                   (.reload factory))))))]))
 
-(defn ^Server run-jetty
+(defn run-jetty
   "
   Start a Jetty webserver to serve the given handler according to the
   supplied options:
@@ -346,10 +346,10 @@
     (when join?
       (.join s))
     {:server s
-     :stop! (fn []
-              (some-> keystore-watch future-cancel)
-              (.stop s))}))
+     :stop-jetty (fn []
+                   (some-> keystore-watch future-cancel)
+                   (.stop s))}))
 
 (defn stop-server
-  [{:keys [stop!]}]
-  (stop!))
+  [{:keys [stop-jetty]}]
+  (stop-jetty))
