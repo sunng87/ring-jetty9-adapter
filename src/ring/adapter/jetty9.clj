@@ -263,18 +263,18 @@
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
-    ;; https://github.com/sunng87/ring-jetty9-adapter/issues/90
-    (when (and ssl? (or ssl-hot-reload-callback
-                        (not (false? ssl-hot-reload?))))
-      (let [callback (or ssl-hot-reload-callback noop) ;; this is optional
-            ^SslContextFactory factory @ssl-factory]
-        (on-file-change!
-          (-> factory .getKeyStorePath io/file)
-          (fn [_] ;; the file above
-            (->> (reify Consumer (accept [_ scf] (callback scf)))
-                 (.reload factory))))))
-    (doto server
-      (.setConnectors (into-array Connector connectors)))))
+    [(doto server (.setConnectors (into-array Connector connectors)))
+     ;; https://github.com/sunng87/ring-jetty9-adapter/issues/90
+     (when (and ssl?                        ;; ssl is enabled and
+                (or ssl-hot-reload-callback ;; we either have a callback
+                    (not (false? ssl-hot-reload?)))) ;; or hot-reload is not explicitly disabled
+       (let [callback (or ssl-hot-reload-callback noop) ;; this is optional so provide a default
+             ^SslContextFactory factory @ssl-factory]
+         (on-file-change!
+           (-> factory .getKeyStorePath io/file)
+           (fn [_] ;; the file above
+             (->> (reify Consumer (accept [_ scf] (callback scf)))
+                  (.reload factory))))))]))
 
 (defn ^Server run-jetty
   "
@@ -334,16 +334,22 @@
             :or {allow-null-path-info false
                  join? true
                  wrap-jetty-handler identity}}]
-  (let [^Server s (create-server options)
+  (let [[^Server s keystore-watch] (create-server options)
         ring-app-handler (wrap-jetty-handler
-                          (if async? (proxy-async-handler handler options) (proxy-handler handler options)))]
+                           (if async?
+                             (proxy-async-handler handler options)
+                             (proxy-handler handler options)))]
     (.setHandler s ring-app-handler)
     (when-let [c configurator]
       (c s))
     (.start s)
     (when join?
       (.join s))
-    s))
+    {:server s
+     :stop! (fn []
+              (some-> keystore-watch future-cancel)
+              (.stop s))}))
 
-(defn stop-server [^Server s]
-  (.stop s))
+(defn stop-server
+  [{:keys [stop!]}]
+  (stop!))
