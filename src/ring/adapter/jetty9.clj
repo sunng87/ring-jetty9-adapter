@@ -1,7 +1,8 @@
 (ns ring.adapter.jetty9
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
-  (:import [org.eclipse.jetty.server
+  (:import (java.util.function Consumer)
+           [org.eclipse.jetty.server
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
@@ -19,10 +20,12 @@
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
-  (:require [clojure.string :as string]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
-            [ring.adapter.jetty9.servlet :as servlet]
-            [ring.adapter.jetty9.websocket :as ws]))
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string :as string]
+    [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map on-file-change! noop]]
+    [ring.adapter.jetty9.servlet :as servlet]
+    [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
 (def ping! ws/ping!)
@@ -231,7 +234,7 @@
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
            daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?
-           thread-pool http3?]
+           thread-pool http3? ssl-hot-reload? ssl-hot-reload-callback]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -254,14 +257,24 @@
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
-        ssl-factory (ssl-context-factory options)
+        ssl-factory (delay (ssl-context-factory options)) ;; might end up not needing it
         connectors (cond-> []
-                     ssl?  (conj (https-connector server http-configuration ssl-factory
+                     ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
-                     http3? (conj (http3-connector server http-configuration ssl-factory ssl-port host)))]
-    (.setConnectors server (into-array Connector connectors))
-    server))
+                     http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
+    ;; https://github.com/sunng87/ring-jetty9-adapter/issues/90
+    (when (and ssl? (or ssl-hot-reload-callback
+                        (not (false? ssl-hot-reload?))))
+      (let [callback (or ssl-hot-reload-callback noop) ;; this is optional
+            ^SslContextFactory factory @ssl-factory]
+        (on-file-change!
+          (-> factory .getKeyStorePath io/file)
+          (fn [_] ;; the file above
+            (->> (reify Consumer (accept [_ scf] (callback scf)))
+                 (.reload factory))))))
+    (doto server
+      (.setConnectors (into-array Connector connectors)))))
 
 (defn ^Server run-jetty
   "
@@ -277,6 +290,8 @@
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
   :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
+  :ssl-hot-reload? - watch the keystore file for changes (defaults to true when ssl?)
+  :ssl-hot-reload-callback - a function of 1-arg (the SslContextFactory) to call when the keystore is reloaded (e.g. logging) - implies :ssl-hot-reload?
   :ssl-context - an optional SSLContext to use for SSL connections
   :keystore - the keystore to use for SSL connections
   :keystore-type - the format of keystore
