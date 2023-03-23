@@ -15,12 +15,12 @@
    :on-text    (fn [ws msg]
                  (jetty9/send! ws msg))
    :on-byte    (fn [ws bytes offset length])})
-
-(defmacro with-jetty [[binding [handler opts]] & body]
-  `(let [server# (jetty9/run-jetty ~handler ~opts)
-         ~binding server#]
-     (try ~@body
-          (finally (.stop server#)))))
+(defmacro with-jetty
+  [[sym [handler opts]] & body]
+  `(let [{stop!# :stop-jetty
+         ~sym  :server} (jetty9/run-jetty ~handler ~opts)]
+    (try ~@body
+         (finally (stop!#)))))
 
 (deftest jetty9-test
   (with-jetty [server [dummy-app {:port       50524
@@ -54,7 +54,7 @@
 (deftest ssl-context-test
   (with-jetty [server [dummy-app {:ssl-port        50524
                                   :http?           false
-                                  :ssl             true
+                                  :ssl?            true
                                   :join?           false
                                   :websockets      {"/path" websocket-handler}
                                   :ssl-context     (ssl-context)}]]

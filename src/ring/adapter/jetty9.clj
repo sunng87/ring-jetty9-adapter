@@ -1,7 +1,8 @@
 (ns ring.adapter.jetty9
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
-  (:import (java.util.function Consumer)
+  (:import (java.net URI)
+           (java.util.function Consumer)
            [org.eclipse.jetty.server
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
@@ -270,11 +271,13 @@
                     (not (false? ssl-hot-reload?)))) ;; or hot-reload is not explicitly disabled
        (let [callback (or ssl-hot-reload-callback noop) ;; this is optional so provide a default
              ^SslContextFactory factory @ssl-factory]
-         (on-file-change!
-           (-> factory .getKeyStorePath io/file)
-           (fn [_] ;; the file above
-             (->> (reify Consumer (accept [_ scf] (callback scf)))
-                  (.reload factory))))))]))
+         (some-> (.getKeyStorePath factory)
+                 URI.
+                 io/file
+                 (on-file-change!
+                   (fn [_] ;; the file above
+                     (->> (reify Consumer (accept [_ scf] (callback scf)))
+                          (.reload factory)))))))]))
 
 (defn run-jetty
   "
