@@ -9,6 +9,7 @@
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
            [org.eclipse.jetty.servlet ServletContextHandler ServletHandler]
+           [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
@@ -254,7 +255,11 @@
                                           job-queue)
                    (.setDaemon daemon?)))
         server (doto (Server. ^ThreadPool pool)
-                 (.addBean (ScheduledExecutorScheduler.)))
+                 (.addBean (ScheduledExecutorScheduler.))
+                 (.addBean (proxy [AbstractLifeCycle] []
+                             (doStart [] (when-some [f (:lifecycle-start options)] (f)))
+                             (doStop  [] (when-some [f (:lifecycle-end options)] (f)))))
+                 (.setStopAtShutdown true))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
@@ -295,6 +300,8 @@
   :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
   :ssl-hot-reload? - watch the keystore file for changes (defaults to true when ssl?)
   :ssl-hot-reload-callback - a function of 1-arg (the SslContextFactory) to call when the keystore is reloaded (e.g. logging) - implies :ssl-hot-reload?
+  :lifecycle-start - a no-arg fn to call when the server starts (per the server's `LifeCycle.doStart`)
+  :lifecycle-end - a no-arg fn to call when the server stops (per the server's `LifeCycle.doStop`)
   :ssl-context - an optional SSLContext to use for SSL connections
   :keystore - the keystore to use for SSL connections
   :keystore-type - the format of keystore

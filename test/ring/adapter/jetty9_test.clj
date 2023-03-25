@@ -18,7 +18,9 @@
 (defmacro with-jetty
   [[sym [handler opts]] & body]
   `(let [{stop!# :stop-jetty
-         ~sym  :server} (jetty9/run-jetty ~handler ~opts)]
+         ~sym  :server} (->> (assoc ~opts :lifecycle-start (partial println "JETTY START")
+                                          :lifecycle-end (partial println "JETTY END"))
+                             (jetty9/run-jetty ~handler))]
     (try ~@body
          (finally (stop!#)))))
 
