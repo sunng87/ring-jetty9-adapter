@@ -1,8 +1,8 @@
 (ns ring.adapter.jetty9
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
-  (:import (java.net URI)
-           (java.util.function Consumer)
+  (:import [java.net URI]
+           [java.util.function Consumer]
            [org.eclipse.jetty.server
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
@@ -227,8 +227,7 @@
 
 (defn- http3-connector [& args]
   ;; load http3 module dynamically
-  (require 'ring.adapter.jetty9.http3)
-  (let [http3-connector* @(ns-resolve 'ring.adapter.jetty9.http3 'http3-connector)]
+  (let [http3-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/http3-connector)]
     (apply http3-connector* args)))
 
 (defn- create-server
