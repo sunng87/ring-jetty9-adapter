@@ -19,15 +19,17 @@
   [[] (with-meta ring-handler opts)])
 
 (defn -doHandle
+  "Synchronous override for `ServletHandler.doHandle"
   [this _ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
   (try
     (let [handler      (.ringHandler ^ring.adapter.jetty9.handlers.SyncProxyHandler this) ;; new code
-          request-map  (common/build-request-map request)
-          response-map (-> request-map handler common/normalize-response)]
-      (when response-map
-        (if (common/websocket-upgrade-response? response-map)
-          (ws/upgrade-websocket request response (:ws response-map) (meta handler))
-          (servlet/update-servlet-response response response-map))))
+          response-map (-> request
+                           common/build-request-map
+                           handler
+                           common/normalize-response)]
+      (if (common/websocket-upgrade-response? response-map)
+        (ws/upgrade-websocket request response (:ws response-map) (meta handler))
+        (servlet/update-servlet-response response response-map)))
     (catch Throwable e
       (.sendError response 500 (.getMessage e)))
     (finally

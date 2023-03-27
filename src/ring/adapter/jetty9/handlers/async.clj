@@ -20,6 +20,7 @@
   [[] (with-meta ring-handler opts)])
 
 (defn -doHandle
+  "Asynchronous override for `ServletHandler.doHandle"
   [this _ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
   (try
     (let [handler (.ringHandler ^ring.adapter.jetty9.handlers.AsyncProxyHandler this) ;; new code
