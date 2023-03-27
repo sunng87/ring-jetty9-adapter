@@ -34,6 +34,20 @@
    {}
    (enumeration-seq (.getHeaderNames request))))
 (defonce noop (constantly nil))
+
+(defn normalize-response
+  "Normalize response for ring spec"
+  [response]
+  (if (string? response)
+    {:body response}
+    response))
+
+(defn websocket-upgrade-response?
+  [{:keys [^long status ws]}]
+  ;; NOTE: we know that when :ws attr is provided in the response, we
+  ;; need to upgrade to websockets protocol.
+  (and (== 101 status) ws))
+
 (defn on-file-change!
   "Sets up a WatchService, and registers the parent of <target> with it for changes.
    A separate thread constantly polls for events, and when the affected file matches
