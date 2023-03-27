@@ -1,12 +1,15 @@
 (ns ring.adapter.jetty9
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
-  (:import [org.eclipse.jetty.server
+  (:import [java.net URI]
+           [java.util.function Consumer]
+           [org.eclipse.jetty.server
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
            [org.eclipse.jetty.servlet ServletContextHandler ServletHandler]
+           [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
@@ -19,10 +22,12 @@
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore])
-  (:require [clojure.string :as string]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map]]
-            [ring.adapter.jetty9.servlet :as servlet]
-            [ring.adapter.jetty9.websocket :as ws]))
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string :as string]
+    [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map on-file-change! noop]]
+    [ring.adapter.jetty9.servlet :as servlet]
+    [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
 (def ping! ws/ping!)
@@ -222,8 +227,7 @@
 
 (defn- http3-connector [& args]
   ;; load http3 module dynamically
-  (require 'ring.adapter.jetty9.http3)
-  (let [http3-connector* @(ns-resolve 'ring.adapter.jetty9.http3 'http3-connector)]
+  (let [http3-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/http3-connector)]
     (apply http3-connector* args)))
 
 (defn- create-server
@@ -231,7 +235,7 @@
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
            daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?
-           thread-pool http3?]
+           thread-pool http3? ssl-hot-reload? ssl-hot-reload-callback]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -250,20 +254,36 @@
                                           job-queue)
                    (.setDaemon daemon?)))
         server (doto (Server. ^ThreadPool pool)
-                 (.addBean (ScheduledExecutorScheduler.)))
+                 (.addBean (ScheduledExecutorScheduler.))
+                 (.addBean (proxy [AbstractLifeCycle] []
+                             (doStart [] (when-some [f (:lifecycle-start options)] (f)))
+                             (doStop  [] (when-some [f (:lifecycle-end options)] (f)))))
+                 (.setStopAtShutdown true))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
-        ssl-factory (ssl-context-factory options)
+        ssl-factory (delay (ssl-context-factory options)) ;; might end up not needing it
         connectors (cond-> []
-                     ssl?  (conj (https-connector server http-configuration ssl-factory
+                     ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
-                     http3? (conj (http3-connector server http-configuration ssl-factory ssl-port host)))]
-    (.setConnectors server (into-array Connector connectors))
-    server))
+                     http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
+    [(doto server (.setConnectors (into-array Connector connectors)))
+     ;; https://github.com/sunng87/ring-jetty9-adapter/issues/90
+     (when (and ssl?                        ;; ssl is enabled and
+                (or ssl-hot-reload-callback ;; we either have a callback
+                    (not (false? ssl-hot-reload?)))) ;; or hot-reload is not explicitly disabled
+       (let [callback (or ssl-hot-reload-callback noop) ;; this is optional so provide a default
+             ^SslContextFactory factory @ssl-factory]
+         (some-> (.getKeyStorePath factory)
+                 URI.
+                 io/file
+                 (on-file-change!
+                   (fn [_] ;; the file above
+                     (->> (reify Consumer (accept [_ scf] (callback scf)))
+                          (.reload factory)))))))]))
 
-(defn ^Server run-jetty
+(defn run-jetty
   "
   Start a Jetty webserver to serve the given handler according to the
   supplied options:
@@ -277,6 +297,10 @@
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
   :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
+  :ssl-hot-reload? - watch the keystore file for changes (defaults to true when ssl?)
+  :ssl-hot-reload-callback - a function of 1-arg (the SslContextFactory) to call when the keystore is reloaded (e.g. logging) - implies :ssl-hot-reload?
+  :lifecycle-start - a no-arg fn to call when the server starts (per the server's `LifeCycle.doStart`)
+  :lifecycle-end - a no-arg fn to call when the server stops (per the server's `LifeCycle.doStop`)
   :ssl-context - an optional SSLContext to use for SSL connections
   :keystore - the keystore to use for SSL connections
   :keystore-type - the format of keystore
@@ -319,16 +343,22 @@
             :or {allow-null-path-info false
                  join? true
                  wrap-jetty-handler identity}}]
-  (let [^Server s (create-server options)
+  (let [[^Server s keystore-watch] (create-server options)
         ring-app-handler (wrap-jetty-handler
-                          (if async? (proxy-async-handler handler options) (proxy-handler handler options)))]
+                           (if async?
+                             (proxy-async-handler handler options)
+                             (proxy-handler handler options)))]
     (.setHandler s ring-app-handler)
     (when-let [c configurator]
       (c s))
     (.start s)
     (when join?
       (.join s))
-    s))
+    {:server s
+     :stop-jetty (fn []
+                   (some-> keystore-watch future-cancel)
+                   (.stop s))}))
 
-(defn stop-server [^Server s]
-  (.stop s))
+(defn stop-server
+  [{:keys [stop-jetty]}]
+  (stop-jetty))
