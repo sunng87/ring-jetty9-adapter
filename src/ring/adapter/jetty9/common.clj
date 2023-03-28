@@ -18,21 +18,22 @@
       (doseq [val val-or-vals]
         (.addHeader response key val))))
   ; Some headers must be set through specific methods
-  (when-let [content-type (get headers "Content-Type")]
-    (.setContentType response content-type)))
+  (some->> (get headers "Content-Type")
+           (.setContentType response)))
+
+(defn- header-kv*
+  [^HttpServletRequest req ^String header-name]
+  [(.toLowerCase header-name Locale/ENGLISH)
+   (->> (.getHeaders req header-name)
+        enumeration-seq
+        (string/join ","))])
 
 (defn get-headers
   "Creates a name/value map of all the request headers."
   [^HttpServletRequest request]
-  (reduce
-   (fn [headers, ^String name]
-     (assoc headers
-            (.toLowerCase name Locale/ENGLISH)
-            (->> (.getHeaders request name)
-                 (enumeration-seq)
-                 (string/join ","))))
-   {}
-   (enumeration-seq (.getHeaderNames request))))
+  (->> (.getHeaderNames request)
+       enumeration-seq
+       (into {} (map (partial header-kv* request)))))
 (defonce noop (constantly nil))
 
 (defn normalize-response

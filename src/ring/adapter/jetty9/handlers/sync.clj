@@ -20,15 +20,19 @@
 
 (defn -doHandle
   "Synchronous override for `ServletHandler.doHandle"
-  [this _ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
+  [^ring.adapter.jetty9.handlers.SyncProxyHandler this
+   _
+   ^Request base-request
+   ^HttpServletRequest request
+   ^HttpServletResponse response]
   (try
-    (let [handler      (.ringHandler ^ring.adapter.jetty9.handlers.SyncProxyHandler this) ;; new code
+    (let [handler      (.ringHandler this)
           response-map (-> request
                            common/build-request-map
                            handler
                            common/normalize-response)]
-      (if (common/websocket-upgrade-response? response-map)
-        (ws/upgrade-websocket request response (:ws response-map) (meta handler))
+      (if-let [ws (common/websocket-upgrade-response? response-map)]
+        (ws/upgrade-websocket request response ws (meta handler))
         (servlet/update-servlet-response response response-map)))
     (catch Throwable e
       (.sendError response 500 (.getMessage e)))

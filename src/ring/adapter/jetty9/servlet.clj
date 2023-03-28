@@ -55,12 +55,12 @@
    (update-servlet-response response nil response-map))
   ([^HttpServletResponse response context response-map]
    (let [{:keys [status headers body]} response-map]
-     (when (nil? response)
-       (throw (NullPointerException. "HttpServletResponse is nil")))
-     (when (nil? response-map)
-       (throw (NullPointerException. "Response map is nil")))
-     (when status
-       (.setStatus response status))
-     (common/set-headers response headers)
-     (let [output-stream (make-output-stream response context)]
-       (protocols/write-body-to-stream body response-map output-stream)))))
+     (cond
+       (nil? response)     (throw (NullPointerException. "HttpServletResponse is nil"))
+       (nil? response-map) (throw (NullPointerException. "Response map is nil"))
+       :else
+       (do
+         (some->> status (.setStatus response))
+         (common/set-headers response headers)
+         (->> (make-output-stream response context)
+              (protocols/write-body-to-stream body response-map)))))))

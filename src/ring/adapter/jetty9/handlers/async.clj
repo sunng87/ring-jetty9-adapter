@@ -21,9 +21,13 @@
 
 (defn -doHandle
   "Asynchronous override for `ServletHandler.doHandle"
-  [this _ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
+  [^ring.adapter.jetty9.handlers.AsyncProxyHandler this
+   _
+   ^Request base-request
+   ^HttpServletRequest request
+   ^HttpServletResponse response]
   (try
-    (let [handler (.ringHandler ^ring.adapter.jetty9.handlers.AsyncProxyHandler this) ;; new code
+    (let [handler (.ringHandler this)
           {:as options
            :keys [async-timeout]
            :or {async-timeout 30000}} (meta handler)
@@ -33,8 +37,8 @@
         (servlet/build-request-map request)
         (fn [response-map]
           (let [response-map (common/normalize-response response-map)]
-            (if (common/websocket-upgrade-response? response-map)
-              (ws/upgrade-websocket request response context (:ws response-map) options)
+            (if-let [ws (common/websocket-upgrade-response? response-map)]
+              (ws/upgrade-websocket request response context ws options)
               (servlet/update-servlet-response response context response-map))))
         (fn [^Throwable exception]
           (.sendError response 500 (.getMessage exception))
