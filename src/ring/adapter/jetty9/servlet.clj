@@ -35,7 +35,7 @@
    :ssl-client-cert    (get-client-cert request)
    :body               (.getInputStream request)})
 
-(defn- make-output-stream
+#_(defn- make-output-stream ;; no longer used/needed
   [^HttpServletResponse response ^AsyncContext context]
   (let [os (.getOutputStream response)]
     (if (nil? context)
@@ -53,7 +53,7 @@
   AsyncContext."
   ([response response-map]
    (update-servlet-response response nil response-map))
-  ([^HttpServletResponse response context response-map]
+  ([^HttpServletResponse response ^AsyncContext context response-map]
    (let [{:keys [status headers body]} response-map]
      (cond
        (nil? response)     (throw (NullPointerException. "HttpServletResponse is nil"))
@@ -62,5 +62,8 @@
        (do
          (some->> status (.setStatus response))
          (common/set-headers response headers)
-         (->> (make-output-stream response context)
-              (protocols/write-body-to-stream body response-map)))))))
+         (->> (.getOutputStream response)
+              (protocols/write-body-to-stream body response-map))
+         ;; response written and output-stream closed
+         ;; if there is an async context, complete it
+         (some-> context .complete))))))
