@@ -212,7 +212,7 @@
      (when async-context
        (.complete async-context)))))
 
-(defn proxy-ws-servlet [ws options]
+#_(defn proxy-ws-servlet [ws options]
   (ServletHolder.
    (proxy [HttpServlet] []
      (doGet [req res]
