@@ -21,7 +21,8 @@
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
-           [java.security KeyStore])
+           [java.security KeyStore]
+           [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
     [clojure.java.io :as io]
     [clojure.string :as string]
@@ -44,19 +45,6 @@
   (build-request-map [request]
     (servlet/build-request-map request)))
 
-(defn normalize-response
-  "Normalize response for ring spec"
-  [response]
-  (cond
-    (string? response) {:body response}
-    :else response))
-
-(defn- websocket-upgrade-response?
-  [{:keys [status ws]}]
-  ;; NOTE: we know that when :ws attr is provided in the response, we
-  ;; need to upgrade to websockets protocol.
-  (and (= 101 status) ws))
-
 (defn ^:internal wrap-proxy-handler
   "Wraps a Jetty handler in a ServletContextHandler.
 
@@ -71,47 +59,16 @@
     (.setServletHandler jetty-handler)))
 
 (defn ^:internal proxy-handler
-  "Returns an Jetty Handler implementation for the given Ring handler."
+  "Returns a Jetty Handler implementation for the given Ring handler."
   [handler options]
   (wrap-proxy-handler
-   (proxy [ServletHandler] []
-     (doHandle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
-       (try
-         (let [request-map (build-request-map request)
-               response-map (-> (handler request-map)
-                                normalize-response)]
-           (when response-map
-             (if (websocket-upgrade-response? response-map)
-               (ws/upgrade-websocket request response (:ws response-map) options)
-               (servlet/update-servlet-response response response-map))))
-         (catch Throwable e
-           (.sendError response 500 (.getMessage e)))
-         (finally
-           (.setHandled base-request true)))))))
+    (SyncProxyHandler. handler options)))
 
 (defn ^:internal proxy-async-handler
-  "Returns an Jetty Handler implementation for the given Ring **async** handler."
-  [handler {:as options
-            :keys [async-timeout]
-            :or {async-timeout 30000}}]
+  "Returns a Jetty Handler implementation for the given Ring **async** handler."
+  [handler options]
   (wrap-proxy-handler
-   (proxy [ServletHandler] []
-     (doHandle [_ ^Request base-request ^HttpServletRequest request ^HttpServletResponse response]
-       (try
-         (let [^AsyncContext context (doto (.startAsync request)
-                                       (.setTimeout async-timeout))]
-           (handler
-            (servlet/build-request-map request)
-            (fn [response-map]
-              (let [response-map (normalize-response response-map)]
-                (if (websocket-upgrade-response? response-map)
-                  (ws/upgrade-websocket request response context (:ws response-map) options)
-                  (servlet/update-servlet-response response context response-map))))
-            (fn [^Throwable exception]
-              (.sendError response 500 (.getMessage exception))
-              (.complete context))))
-         (finally
-           (.setHandled base-request true)))))))
+    (AsyncProxyHandler. handler options)))
 
 (defn- http-config
   "Creates jetty http configurator"

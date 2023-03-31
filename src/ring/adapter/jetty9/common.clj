@@ -18,22 +18,37 @@
       (doseq [val val-or-vals]
         (.addHeader response key val))))
   ; Some headers must be set through specific methods
-  (when-let [content-type (get headers "Content-Type")]
-    (.setContentType response content-type)))
+  (some->> (get headers "Content-Type")
+           (.setContentType response)))
+
+(defn- header-kv*
+  [^HttpServletRequest req ^String header-name]
+  [(.toLowerCase header-name Locale/ENGLISH)
+   (->> (.getHeaders req header-name)
+        enumeration-seq
+        (string/join ","))])
 
 (defn get-headers
   "Creates a name/value map of all the request headers."
   [^HttpServletRequest request]
-  (reduce
-   (fn [headers, ^String name]
-     (assoc headers
-            (.toLowerCase name Locale/ENGLISH)
-            (->> (.getHeaders request name)
-                 (enumeration-seq)
-                 (string/join ","))))
-   {}
-   (enumeration-seq (.getHeaderNames request))))
+  (->> (.getHeaderNames request)
+       enumeration-seq
+       (into {} (map (partial header-kv* request)))))
 (defonce noop (constantly nil))
+
+(defn normalize-response
+  "Normalize response for ring spec"
+  [response]
+  (if (string? response)
+    {:body response}
+    response))
+
+(defn websocket-upgrade-response?
+  [{:keys [^long status ws]}]
+  ;; NOTE: we know that when :ws attr is provided in the response, we
+  ;; need to upgrade to websockets protocol.
+  (and (== 101 status) ws))
+
 (defn on-file-change!
   "Sets up a WatchService, and registers the parent of <target> with it for changes.
    A separate thread constantly polls for events, and when the affected file matches

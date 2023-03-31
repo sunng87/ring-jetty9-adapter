@@ -14,7 +14,7 @@
            [java.time Duration])
   (:require [clojure.string :as string]
             [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map
-                                                get-headers set-headers]]))
+                                                get-headers set-headers noop]]))
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
@@ -31,12 +31,10 @@
 (defprotocol WebSocketPing
   (-ping! [x ws] "How to encode bytes sent with a ping"))
 
-(def ^:private no-op (constantly nil))
-
 (defn- write-callback
   [{:keys [write-failed write-success]
-    :or {write-failed  no-op
-         write-success no-op}}]
+    :or   {write-failed  noop
+           write-success noop}}]
   (reify WriteCallback
     (writeFailed [_ throwable]
       (write-failed throwable))
@@ -139,13 +137,13 @@
 (defn- proxy-ws-adapter
   [{:as _
     :keys [on-connect on-error on-text on-close on-bytes on-ping on-pong]
-    :or {on-connect no-op
-         on-error no-op
-         on-text no-op
-         on-close no-op
-         on-bytes no-op
-         on-ping no-op
-         on-pong no-op}}]
+    :or {on-connect noop
+         on-error noop
+         on-text noop
+         on-close noop
+         on-bytes noop
+         on-ping noop
+         on-pong noop}}]
   (proxy [WebSocketAdapter WebSocketPingPongListener] []
     (onWebSocketConnect [^Session session]
       (let [^WebSocketAdapter this this]
@@ -214,7 +212,7 @@
      (when async-context
        (.complete async-context)))))
 
-(defn proxy-ws-servlet [ws options]
+#_(defn proxy-ws-servlet [ws options]
   (ServletHolder.
    (proxy [HttpServlet] []
      (doGet [req res]
