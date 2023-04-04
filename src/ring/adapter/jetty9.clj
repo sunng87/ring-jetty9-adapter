@@ -204,12 +204,12 @@
          http? true
          proxy? false}}]
   {:pre [(or http? ssl? ssl-port)]}
-  (let [pool (or thread-pool
-                 (doto (QueuedThreadPool. (int max-threads)
-                                          (int min-threads)
-                                          (int threadpool-idle-timeout)
-                                          job-queue)
-                   (.setDaemon daemon?)))
+  (let [^ThreadPool pool (or thread-pool
+                             (doto (QueuedThreadPool. (int max-threads)
+                                                      (int min-threads)
+                                                      (int threadpool-idle-timeout)
+                                                      job-queue)
+                               (.setDaemon daemon?)))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
@@ -225,20 +225,20 @@
                                           (->> (reify Consumer
                                                  (accept [_ scf] (callback scf)))
                                                (.reload factory)))))))
-        server (cond-> (doto (Server. ^ThreadPool pool)
-                         (.addBean (ScheduledExecutorScheduler.))
-                         ;; support custom lifecycle tied to the server's lifecycle
-                         (.addBean (proxy [AbstractLifeCycle] []
-                                     (doStart [] (when-some [f (:lifecycle-start options)] (f)))
-                                     (doStop  [] (when-some [f (:lifecycle-end options)] (f)))))
-                         (.setStopAtShutdown true))
-                       ;; https://github.com/sunng87/ring-jetty9-adapter/issues/90
-                       (and ssl?                        ;; ssl is enabled and
-                            (or ssl-hot-reload-callback ;; we either have a callback
-                                (not (false? ssl-hot-reload?))))
-                       (doto (.addBean (proxy [AbstractLifeCycle] []
-                                         (doStart [] @ssl-reload-future)
-                                         (doStop  [] (some-> @ssl-reload-future future-cancel))))))
+        server (doto (Server. pool)
+                 (.addBean (ScheduledExecutorScheduler.))
+                 ;; support custom lifecycle tied to the server's lifecycle
+                 (.addBean (proxy [AbstractLifeCycle] []
+                             (doStart []
+                               (when-some [f (:lifecycle-start options)] (f))
+                               (and ssl?                        ;; ssl is enabled and
+                                    (or ssl-hot-reload-callback ;; we either have a callback
+                                        (not (false? ssl-hot-reload?)))
+                                    @ssl-reload-future))
+                             (doStop []
+                               (when-some [f (:lifecycle-end options)] (f))
+                               (some-> @ssl-reload-future future-cancel))))
+                 (.setStopAtShutdown true))
         connectors (cond-> []
                      ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? ssl-port host max-idle-time))
