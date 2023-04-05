@@ -17,12 +17,11 @@
    :on-byte    (fn [ws bytes offset length])})
 (defmacro with-jetty
   [[sym [handler opts]] & body]
-  `(let [{stop!# :stop-jetty
-         ~sym  :server} (->> (assoc ~opts :lifecycle-start (partial println "JETTY START")
-                                          :lifecycle-end (partial println "JETTY END"))
-                             (jetty9/run-jetty ~handler))]
-    (try ~@body
-         (finally (stop!#)))))
+  `(let [~sym (->> (assoc ~opts :lifecycle-start (partial println "JETTY START")
+                                :lifecycle-end   (partial println "JETTY END"))
+                   (jetty9/run-jetty ~handler))]
+     (try ~@body
+          (finally (jetty9/stop-server ~sym)))))
 
 (deftest jetty9-test
   (with-jetty [server [dummy-app {:port       50524

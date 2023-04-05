@@ -204,47 +204,55 @@
          http? true
          proxy? false}}]
   {:pre [(or http? ssl? ssl-port)]}
-  (let [pool (or thread-pool
-                 (doto (QueuedThreadPool. (int max-threads)
-                                          (int min-threads)
-                                          (int threadpool-idle-timeout)
-                                          job-queue)
-                   (.setDaemon daemon?)))
-        server (doto (Server. ^ThreadPool pool)
-                 (.addBean (ScheduledExecutorScheduler.))
-                 (.addBean (proxy [AbstractLifeCycle] []
-                             (doStart [] (when-some [f (:lifecycle-start options)] (f)))
-                             (doStop  [] (when-some [f (:lifecycle-end options)] (f)))))
-                 (.setStopAtShutdown true))
+  (let [^ThreadPool pool (or thread-pool
+                             (doto (QueuedThreadPool. (int max-threads)
+                                                      (int min-threads)
+                                                      (int threadpool-idle-timeout)
+                                                      job-queue)
+                               (.setDaemon daemon?)))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
-        ssl-factory (delay (ssl-context-factory options)) ;; might end up not needing it
+        ssl-factory (delay (ssl-context-factory options)) ;; lazy load this (if needed)
+        ssl-reload-future (delay
+                            (let [callback (or ssl-hot-reload-callback noop) ;; this is optional so provide a default
+                                  ^SslContextFactory factory @ssl-factory]
+                              (some-> (.getKeyStorePath factory)
+                                      URI.
+                                      io/file
+                                      (on-file-change!
+                                        (fn [_] ;; the file above
+                                          (->> (reify Consumer
+                                                 (accept [_ scf] (callback scf)))
+                                               (.reload factory)))))))
+        server (doto (Server. pool)
+                 (.addBean (ScheduledExecutorScheduler.))
+                 ;; support custom lifecycle tied to the server's lifecycle
+                 (.addBean (proxy [AbstractLifeCycle] []
+                             (doStart []
+                               (when-some [f (:lifecycle-start options)] (f))
+                               (and ssl?                        ;; ssl is enabled and
+                                    (or ssl-hot-reload-callback ;; we either have a callback
+                                        (not (false? ssl-hot-reload?)))
+                                    @ssl-reload-future))
+                             (doStop []
+                               (when-some [f (:lifecycle-end options)] (f))
+                               (some-> @ssl-reload-future future-cancel))))
+                 (.setStopAtShutdown true))
         connectors (cond-> []
                      ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
-    [(doto server (.setConnectors (into-array Connector connectors)))
-     ;; https://github.com/sunng87/ring-jetty9-adapter/issues/90
-     (when (and ssl?                        ;; ssl is enabled and
-                (or ssl-hot-reload-callback ;; we either have a callback
-                    (not (false? ssl-hot-reload?)))) ;; or hot-reload is not explicitly disabled
-       (let [callback (or ssl-hot-reload-callback noop) ;; this is optional so provide a default
-             ^SslContextFactory factory @ssl-factory]
-         (some-> (.getKeyStorePath factory)
-                 URI.
-                 io/file
-                 (on-file-change!
-                   (fn [_] ;; the file above
-                     (->> (reify Consumer (accept [_ scf] (callback scf)))
-                          (.reload factory)))))))]))
+    (doto server
+      (.setConnectors (into-array Connector connectors)))))
 
 (defn run-jetty
   "
   Start a Jetty webserver to serve the given handler according to the
   supplied options:
 
+  :configurator - a function called with the Jetty Server instance (allows for configuration beyond the supported options listed below)
   :http? - allow connections over HTTP
   :port - the port to listen on (defaults to 80)
   :host - the hostname to listen on
@@ -300,7 +308,7 @@
             :or {allow-null-path-info false
                  join? true
                  wrap-jetty-handler identity}}]
-  (let [[^Server s keystore-watch] (create-server options)
+  (let [^Server s (create-server options)
         ring-app-handler (wrap-jetty-handler
                            (if async?
                              (proxy-async-handler handler options)
@@ -311,11 +319,8 @@
     (.start s)
     (when join?
       (.join s))
-    {:server s
-     :stop-jetty (fn []
-                   (some-> keystore-watch future-cancel)
-                   (.stop s))}))
+    s))
 
 (defn stop-server
-  [{:keys [stop-jetty]}]
-  (stop-jetty))
+  [^Server s]
+  (.stop s))
