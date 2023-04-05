@@ -47,7 +47,7 @@
   [{:keys [^long status ws]}]
   ;; NOTE: we know that when :ws attr is provided in the response, we
   ;; need to upgrade to websockets protocol.
-  (and (== 101 status) ws))
+  (and status (== 101 status) ws))
 
 (defn on-file-change!
   "Sets up a WatchService, and registers the parent of <target> with it for changes.
