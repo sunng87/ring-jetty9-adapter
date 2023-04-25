@@ -1,10 +1,7 @@
 (ns ring.adapter.jetty9.common
   (:require [clojure.string :as string])
   (:import [jakarta.servlet.http HttpServletRequest HttpServletResponse]
-           (java.io File)
-           (java.nio.file FileSystems Paths StandardWatchEventKinds WatchEvent)
-           [java.util Locale]
-           (java.util.concurrent TimeUnit)))
+           [java.util Locale]))
 
 (defprotocol RequestMapDecoder
   (build-request-map [r]))

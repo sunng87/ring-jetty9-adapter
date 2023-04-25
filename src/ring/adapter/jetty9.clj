@@ -1,9 +1,7 @@
 (ns ring.adapter.jetty9
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
-  (:import [java.net URI]
-           [java.util.function Consumer]
-           [org.eclipse.jetty.server
+  (:import [org.eclipse.jetty.server
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
@@ -13,7 +11,7 @@
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
-           [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory SslContextFactory$Server]
+           [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory$Server]
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [jakarta.servlet AsyncContext]
@@ -24,9 +22,8 @@
            [java.security KeyStore]
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
-    [clojure.java.io :as io]
     [clojure.string :as string]
-    [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map on-file-change! noop]]
+    [ring.adapter.jetty9.common :refer [RequestMapDecoder]]
     [ring.adapter.jetty9.servlet :as servlet]
     [ring.adapter.jetty9.websocket :as ws]))
 
