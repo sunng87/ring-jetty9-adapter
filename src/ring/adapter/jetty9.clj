@@ -223,7 +223,9 @@
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
-    (when (and ssl? (not (false? ssl-hot-reload?)))
+    (when (and ssl?
+               (not (false? ssl-hot-reload?))
+               (some? (.getKeyStorePath @ssl-factory)))
       (.addBean server (KeyStoreScanner. @ssl-factory)))
     (doto server
       (.setConnectors (into-array Connector connectors)))))
