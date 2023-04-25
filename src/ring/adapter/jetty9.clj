@@ -187,10 +187,6 @@
   (let [http3-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/http3-connector)]
     (apply http3-connector* args)))
 
-(defn- with-keystore-scan
-  [^Server s ^SslContextFactory ctx]
-  (doto s (.addBean (KeyStoreScanner. ctx))))
-
 (defn- create-server
   "Construct a Jetty Server instance."
   [{:as options
@@ -230,9 +226,9 @@
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
-    (doto (cond-> server
-                  (and ssl? (not (false? ssl-hot-reload?)))
-                  (with-keystore-scan @ssl-factory))
+    (when (and ssl? (not (false? ssl-hot-reload?)))
+      (.addBean server (KeyStoreScanner. @ssl-factory)))
+    (doto server
       (.setConnectors (into-array Connector connectors)))))
 
 (defn run-jetty
