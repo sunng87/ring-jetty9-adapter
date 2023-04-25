@@ -11,7 +11,7 @@
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
-           [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory$Server]
+           [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory SslContextFactory$Server]
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [jakarta.servlet AsyncContext]
@@ -225,7 +225,7 @@
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
     (when (and ssl?
                (not (false? ssl-hot-reload?))
-               (some? (.getKeyStorePath @ssl-factory)))
+               (some? (.getKeyStorePath ^SslContextFactory @ssl-factory)))
       (.addBean server (KeyStoreScanner. @ssl-factory)))
     (doto server
       (.setConnectors (into-array Connector connectors)))))
