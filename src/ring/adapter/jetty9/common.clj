@@ -48,3 +48,4 @@
   ;; NOTE: we know that when :ws attr is provided in the response, we
   ;; need to upgrade to websockets protocol.
   (and (== 101 status) ws))
+
