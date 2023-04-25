@@ -226,7 +226,8 @@
     (when (and ssl?
                (not (false? ssl-hot-reload?))
                (some? (.getKeyStorePath ^SslContextFactory @ssl-factory)))
-      (.addBean server (KeyStoreScanner. @ssl-factory)))
+      (.addBean server (doto (KeyStoreScanner. @ssl-factory)
+                         (.setScanInterval 3600)))) ;; seconds - i.e. 1 hour
     (doto server
       (.setConnectors (into-array Connector connectors)))))
 
