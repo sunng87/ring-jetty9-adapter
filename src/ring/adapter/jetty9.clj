@@ -13,7 +13,7 @@
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
-           [org.eclipse.jetty.util.ssl SslContextFactory SslContextFactory$Server]
+           [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory SslContextFactory$Server]
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [jakarta.servlet AsyncContext]
@@ -187,12 +187,16 @@
   (let [http3-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/http3-connector)]
     (apply http3-connector* args)))
 
+(defn- with-keystore-scan
+  [^Server s ^SslContextFactory ctx]
+  (doto s (.addBean (KeyStoreScanner. ctx))))
+
 (defn- create-server
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
            daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?
-           thread-pool http3? ssl-hot-reload? ssl-hot-reload-callback]
+           thread-pool http3? ssl-hot-reload?]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -214,37 +218,21 @@
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
         ssl-factory (delay (ssl-context-factory options)) ;; lazy load this (if needed)
-        ssl-reload-future (delay
-                            (let [callback (or ssl-hot-reload-callback noop) ;; this is optional so provide a default
-                                  ^SslContextFactory factory @ssl-factory]
-                              (some-> (.getKeyStorePath factory)
-                                      URI.
-                                      io/file
-                                      (on-file-change!
-                                        (fn [_] ;; the file above
-                                          (->> (reify Consumer
-                                                 (accept [_ scf] (callback scf)))
-                                               (.reload factory)))))))
         server (doto (Server. pool)
                  (.addBean (ScheduledExecutorScheduler.))
                  ;; support custom lifecycle tied to the server's lifecycle
                  (.addBean (proxy [AbstractLifeCycle] []
-                             (doStart []
-                               (when-some [f (:lifecycle-start options)] (f))
-                               (and ssl?                        ;; ssl is enabled and
-                                    (or ssl-hot-reload-callback ;; we either have a callback
-                                        (not (false? ssl-hot-reload?)))
-                                    @ssl-reload-future))
-                             (doStop []
-                               (when-some [f (:lifecycle-end options)] (f))
-                               (some-> @ssl-reload-future future-cancel))))
+                             (doStart [] (when-some [f (:lifecycle-start options)] (f)))
+                             (doStop  [] (when-some [f (:lifecycle-end options)]   (f)))))
                  (.setStopAtShutdown true))
         connectors (cond-> []
                      ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
-    (doto server
+    (doto (cond-> server
+                  (and ssl? (not (false? ssl-hot-reload?)))
+                  (with-keystore-scan @ssl-factory))
       (.setConnectors (into-array Connector connectors)))))
 
 (defn run-jetty
@@ -263,7 +251,6 @@
   :ssl? - allow connections over HTTPS
   :ssl-port - the SSL port to listen on (defaults to 443, implies :ssl?)
   :ssl-hot-reload? - watch the keystore file for changes (defaults to true when ssl?)
-  :ssl-hot-reload-callback - a function of 1-arg (the SslContextFactory) to call when the keystore is reloaded (e.g. logging) - implies :ssl-hot-reload?
   :lifecycle-start - a no-arg fn to call when the server starts (per the server's `LifeCycle.doStart`)
   :lifecycle-end - a no-arg fn to call when the server stops (per the server's `LifeCycle.doStop`)
   :ssl-context - an optional SSLContext to use for SSL connections

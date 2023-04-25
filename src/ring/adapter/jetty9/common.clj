@@ -48,34 +48,3 @@
   ;; NOTE: we know that when :ws attr is provided in the response, we
   ;; need to upgrade to websockets protocol.
   (and (== 101 status) ws))
-
-(defn on-file-change!
-  "Sets up a WatchService, and registers the parent of <target> with it for changes.
-   A separate thread constantly polls for events, and when the affected file matches
-   <target>, calls <on-change> (no-args). Returns a (cancellable) Future.
-   ATTENTION: Cancelling the future doesn't break the loop immediately - might take
-   up to 5 minutes (worst-case)!"
-  [^File target on-change!]
-  {:pre [(.exists target)]}
-  (let [watch-service   (-> (FileSystems/getDefault) .newWatchService)
-        target-absolute (.getAbsoluteFile target)
-        target-path     (-> (.toPath target-absolute) .getFileName)]
-    ;; register the parent directory with the watch-service
-    (-> target-absolute
-        .getParent
-        (Paths/get (into-array String []))
-        (.register watch-service (into-array [StandardWatchEventKinds/ENTRY_MODIFY])))
-    ;; start event-polling thread
-    (future
-      (while (not (.isInterrupted (Thread/currentThread)))
-        (when-some [wk (.poll watch-service 5 TimeUnit/MINUTES)] ;; blocking call
-          (run!
-            (fn [^WatchEvent e]
-              (let [affected-path (.context e)]
-                (when (= affected-path target-path)
-                  ;; only interested in changes in
-                  ;; one file (renaming NOT included)
-                  (on-change! target))))
-            (.pollEvents wk))
-          (.reset wk)))
-      (.close watch-service))))
