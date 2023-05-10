@@ -94,14 +94,12 @@ your version of rj9a uses.
 ### HTTP/3
 
 From 10.0.9, Jetty ships an expiremental HTTP/3 implementation based
-on [the quiche library](https://github.com/cloudflare/quiche). rj9a
-`0.17.6` made it an optional feature. To enable HTTP/3 support, you
-will need to:
+on [Jetty's own build](https://github.com/jetty-project/jetty-quiche-native) of
+[the quiche library](https://github.com/cloudflare/quiche). rj9a `0.17.6` made
+it an optional feature. To enable HTTP/3 support, you will need to:
 
 * Install libquiche on your system and make sure `libquiche.so` can be
-  loaded from the Clojure(Java) application. I've created [a docker
-  image](https://hub.docker.com/repository/docker/sunng/quiche-jdk-17)
-  with compiled quiche library and JDK ready for use.
+  loaded from the Clojure(Java) application.
 * In addition to rj9a, add dependency
   `[info.sunng/ring-jetty9-adapter-http3 "VERSION"]` to your clojure
   project to bring in HTTP/3 staff. Remember to replace `VERSION` with our
