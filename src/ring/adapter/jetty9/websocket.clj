@@ -237,11 +237,11 @@
   "Returns a websocket upgrade response.
 
    ws-handler must be a map of handler fns:
-   {:on-connect #(create-fn %)               ; ^Session ws-session
-    :on-text   #(text-fn % %2 %3 %4)         ; ^Session ws-session message
-    :on-bytes  #(binary-fn % %2 %3 %4 %5 %6) ; ^Session ws-session payload offset len
-    :on-close  #(close-fn % %2 %3 %4)        ; ^Session ws-session statusCode reason
-    :on-error  #(error-fn % %2 %3)}          ; ^Session ws-session e
+   {:on-connect #(create-fn %)               ; ^WebSocketAdapter ws
+    :on-text   #(text-fn % %2)               ; ^WebSocketAdapter ws message
+    :on-bytes  #(binary-fn % %2 %3 %4)       ; ^WebSocketAdapter ws payload offset len
+    :on-close  #(close-fn % %2 %3)           ; ^WebSocketAdapter ws statusCode reason
+    :on-error  #(error-fn % %2)}             ; ^WebSocketAdapter ws e
    or a custom creator function take upgrade request as parameter and returns a handler fns map,
    negotiated subprotocol and extensions (or error info).
 
