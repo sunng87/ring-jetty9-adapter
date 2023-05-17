@@ -23,10 +23,10 @@
            [java.security KeyStore]
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
-   [clojure.string :as string]
-   [ring.adapter.jetty9.common :refer [RequestMapDecoder]]
-   [ring.adapter.jetty9.servlet :as servlet]
-   [ring.adapter.jetty9.websocket :as ws]))
+    [clojure.string :as string]
+    [ring.adapter.jetty9.common :refer [RequestMapDecoder]]
+    [ring.adapter.jetty9.servlet :as servlet]
+    [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
 (def ping! ws/ping!)
@@ -60,13 +60,13 @@
   "Returns a Jetty Handler implementation for the given Ring handler."
   [handler options]
   (wrap-proxy-handler
-   (SyncProxyHandler. handler options)))
+    (SyncProxyHandler. handler options)))
 
 (defn ^:internal proxy-async-handler
   "Returns a Jetty Handler implementation for the given Ring **async** handler."
   [handler options]
   (wrap-proxy-handler
-   (AsyncProxyHandler. handler options)))
+    (AsyncProxyHandler. handler options)))
 
 (defn- http-config
   "Creates jetty http configurator"
@@ -350,9 +350,9 @@
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         ring-app-handler (wrap-jetty-handler
-                          (if async?
-                            (proxy-async-handler handler options)
-                            (proxy-handler handler options)))]
+                           (if async?
+                             (proxy-async-handler handler options)
+                             (proxy-handler handler options)))]
     (.setHandler s ring-app-handler)
     (when-let [c configurator]
       (c s))
