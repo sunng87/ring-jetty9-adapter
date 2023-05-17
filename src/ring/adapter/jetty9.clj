@@ -172,7 +172,7 @@
        (boolean? connect-protocol-enabled)
        (doto (.setConnectProtocolEnabled connect-protocol-enabled))
 
-       flow-control-strategy-factory
+       (contains? h2-options :flow-control-strategy-factory)
        (doto (.setFlowControlStrategyFactory flow-control-strategy-factory))
 
        initial-session-recv-window
