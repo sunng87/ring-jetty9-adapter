@@ -3,7 +3,12 @@
             [ring.adapter.jetty9 :as jetty9]
             [clj-http.client :as client]
             [less.awful.ssl :as less-ssl]
-            #_[gniazdo.core :as ws]))
+            #_[gniazdo.core :as ws])
+  (:import
+    [org.eclipse.jetty.http2.server AbstractHTTP2ServerConnectionFactory]
+    [org.eclipse.jetty.http2.frames Frame SettingsFrame]
+    [org.eclipse.jetty.http2.parser WindowRateControl$Factory]
+    [org.eclipse.jetty.http2 BufferingFlowControlStrategy FlowControlStrategy$Factory]))
 
 (defn dummy-app [req]
   {:status 200})
@@ -72,6 +77,72 @@
          Exception
          #"unable to find valid certification path to requested target"
          (client/get "https://localhost:50524/")))))
+
+(defn- get-h2-factory-options
+  [factory]
+  (->> factory
+       ((juxt
+         #(.isConnectProtocolEnabled %)
+         #(.getFlowControlStrategyFactory %)
+         #(.getInitialSessionRecvWindow %)
+         #(.getInitialStreamRecvWindow %)
+         #(.getMaxConcurrentStreams %)
+         #(.getMaxDynamicTableSize %)
+         #(.getMaxFrameLength %)
+         #(.getMaxHeaderBlockFragment %)
+         #(.getMaxSettingsKeys %)
+         #(.getRateControlFactory %)
+         #(.getStreamIdleTimeout %)
+         #(.isUseInputDirectByteBuffers %)
+         #(.isUseOutputDirectByteBuffers %)))
+       (zipmap  [:connect-protocol-enabled
+                 :flow-control-strategy-factory
+                 :initial-session-recv-window
+                 :initial-stream-recv-window
+                 :max-concurrent-streams
+                 :max-dynamic-table-size
+                 :max-frame-length
+                 :max-header-block-fragment
+                 :max-setting-keys
+                 :rate-control-factory
+                 :stream-idle-timeout
+                 :use-input-direct-byte-buffers
+                 :use-output-direct-byte-buffers])))
+
+(deftest http2-options-test
+  (let [flow-control-strategy-factory
+        (proxy [FlowControlStrategy$Factory] []
+          (newFlowControlStrategy [] (BufferingFlowControlStrategy. (float 0.7))))
+
+        h2-options
+        {:connect-protocol-enabled false
+         :flow-control-strategy-factory flow-control-strategy-factory
+         :initial-session-recv-window (* 2048 2048)
+         :initial-stream-recv-window (* 512 1024)
+         :max-concurrent-streams 256
+         :max-dynamic-table-size 2048
+         :max-frame-length Frame/MAX_MAX_LENGTH
+         :max-header-block-fragment 1
+         :max-setting-keys SettingsFrame/MAX_MAX_LENGTH
+         :rate-control-factory (WindowRateControl$Factory. 100)
+         :stream-idle-timeout 1000
+         :use-input-direct-byte-buffers false
+         :use-output-direct-byte-buffers false}]
+    (with-jetty [server [dummy-app {:ssl-port        50524
+                                    :port            50523
+                                    :h2?              true
+                                    :h2c?             true
+                                    :h2-options      h2-options
+                                    :ssl?            true
+                                    :join?           false
+                                    :ssl-context     (ssl-context)}]]
+      (let [factories-options
+            (->> (.getConnectors server)
+                 (mapcat #(.getConnectionFactories %))
+                 (filter #(isa? (type %) AbstractHTTP2ServerConnectionFactory))
+                 (map get-h2-factory-options))]
+        (doseq [fo factories-options]
+          (is (= fo h2-options)))))))
 
 #_(deftest websocket-test
     (with-jetty [server [dummy-app {:port       50524
