@@ -169,7 +169,7 @@
                  stream-idle-timeout use-input-direct-byte-buffers use-output-direct-byte-buffers]}
          h2-options]
      (cond-> factory-from-http-config
-       connect-protocol-enabled
+       (boolean? connect-protocol-enabled)
        (doto (.setConnectProtocolEnabled connect-protocol-enabled))
 
        flow-control-strategy-factory
@@ -202,10 +202,10 @@
        stream-idle-timeout
        (doto (.setStreamIdleTimeout stream-idle-timeout))
 
-       use-input-direct-byte-buffers
+       (boolean? use-input-direct-byte-buffers)
        (doto (.setUseInputDirectByteBuffers use-input-direct-byte-buffers))
 
-       use-output-direct-byte-buffers
+       (boolean? use-output-direct-byte-buffers)
        (doto (.setUseOutputDirectByteBuffers use-output-direct-byte-buffers))))))
 
 (defn- https-connector [server http-configuration ssl-context-factory h2? h2-options port host max-idle-time]
@@ -233,6 +233,8 @@
       (.setPort port)
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
+
+(boolean? true)
 
 (defn- http3-connector [& args]
   ;; load http3 module dynamically
