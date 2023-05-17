@@ -210,7 +210,7 @@
 
 (defn- https-connector [server http-configuration ssl-context-factory h2? h2-options port host max-idle-time]
   (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,http/1.1")
-                                                     (-> (HTTP2ServerConnectionFactory http-configuration)
+                                                     (-> (HTTP2ServerConnectionFactory. http-configuration)
                                                          (http2-server-connection-factory h2-options))])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
