@@ -15,9 +15,10 @@
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [jakarta.servlet AsyncContext]
-           [org.eclipse.jetty.http2 HTTP2Cipher]
+           [org.eclipse.jetty.http2 HTTP2Cipher FlowControlStrategy$Factory]
            [org.eclipse.jetty.http2.server
-            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory]
+            HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory AbstractHTTP2ServerConnectionFactory]
+           [org.eclipse.jetty.http2.parser RateControl$Factory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore]
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
@@ -155,9 +156,65 @@
           (.addExcludeProtocols context-server protocols))))
     context-server))
 
-(defn- https-connector [server http-configuration ssl-context-factory h2? port host max-idle-time]
+(defn- http2-server-connection-factory
+  "Set AbstractHTTP2ServerConnectionFactory specific options for connection factory presumably created from HttpConfiguration"
+  ([^AbstractHTTP2ServerConnectionFactory factory-from-http-config]
+   (http2-server-connection-factory factory-from-http-config nil))
+  ([^AbstractHTTP2ServerConnectionFactory factory-from-http-config h2-options]
+   (let [{:keys [connect-protocol-enabled
+                 ^FlowControlStrategy$Factory flow-control-strategy-factory
+                 initial-session-recv-window initial-stream-recv-window max-concurrent-streams max-dynamic-table-size
+                 max-frame-length max-header-block-fragment max-setting-keys
+                 ^RateControl$Factory rate-control-factory
+                 stream-idle-timeout use-input-direct-byte-buffers use-output-direct-byte-buffers]}
+         h2-options
+         
+         option-provided?
+         #(contains? h2-options %)]
+     (cond-> factory-from-http-config
+       (option-provided? :connect-protocol-enabled)
+       (doto (.setConnectProtocolEnabled connect-protocol-enabled))
+
+       (option-provided? :flow-control-strategy-factory)
+       (doto (.setFlowControlStrategyFactory flow-control-strategy-factory))
+
+       (option-provided? :initial-session-recv-window)
+       (doto (.setInitialSessionRecvWindow initial-session-recv-window))
+
+       (option-provided? :initial-stream-recv-window)
+       (doto (.setInitialStreamRecvWindow initial-stream-recv-window))
+
+       (option-provided? :max-concurrent-streams)
+       (doto (.setMaxConcurrentStreams max-concurrent-streams))
+
+       (option-provided? :max-dynamic-table-size)
+       (doto (.setMaxDynamicTableSize max-dynamic-table-size))
+
+       (option-provided? :max-frame-length)
+       (doto (.setMaxFrameLength max-frame-length))
+
+       (option-provided? :max-header-block-fragment)
+       (doto (.setMaxHeaderBlockFragment max-header-block-fragment))
+
+       (option-provided? :max-setting-keys)
+       (doto (.setMaxSettingsKeys max-setting-keys))
+
+       (option-provided? :rate-control-factory)
+       (doto (.setRateControlFactory rate-control-factory))
+
+       (option-provided? :stream-idle-timeout)
+       (doto (.setStreamIdleTimeout stream-idle-timeout))
+
+       (option-provided? :use-input-direct-byte-buffers)
+       (doto (.setUseInputDirectByteBuffers use-input-direct-byte-buffers))
+
+       (option-provided? :use-output-direct-byte-buffers)
+       (doto (.setUseOutputDirectByteBuffers use-output-direct-byte-buffers))))))
+
+(defn- https-connector [server http-configuration ssl-context-factory h2? h2-options port host max-idle-time]
   (let [secure-connection-factory (concat (when h2? [(ALPNServerConnectionFactory. "h2,http/1.1")
-                                                     (HTTP2ServerConnectionFactory. http-configuration)])
+                                                     (-> (HTTP2ServerConnectionFactory. http-configuration)
+                                                         (http2-server-connection-factory h2-options))])
                                           [(HttpConnectionFactory. http-configuration)])]
     (doto (ServerConnector.
            ^Server server
@@ -167,9 +224,10 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
-(defn- http-connector [server http-configuration h2c? port host max-idle-time proxy?]
+(defn- http-connector [server http-configuration h2c? h2-options port host max-idle-time proxy?]
   (let [plain-connection-factories (cond-> [(HttpConnectionFactory. http-configuration)]
-                                     h2c? (concat [(HTTP2CServerConnectionFactory. http-configuration)])
+                                     h2c? (concat [(-> (HTTP2CServerConnectionFactory. http-configuration)
+                                                       (http2-server-connection-factory h2-options))])
                                      proxy? (concat [(ProxyConnectionFactory.)]))]
     (doto (ServerConnector.
            ^Server server
@@ -188,7 +246,7 @@
   "Construct a Jetty Server instance."
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
-           daemon? max-idle-time host ssl? ssl-port h2? h2c? http? proxy?
+           daemon? max-idle-time host ssl? ssl-port h2? h2c? h2-options http? proxy?
            thread-pool http3? ssl-hot-reload?]
     :or {port 80
          max-threads 50
@@ -220,8 +278,8 @@
                  (.setStopAtShutdown true))
         connectors (cond-> []
                      ssl?  (conj (https-connector server http-configuration @ssl-factory
-                                                  h2? ssl-port host max-idle-time))
-                     http? (conj (http-connector server http-configuration h2c? port host max-idle-time proxy?))
+                                                  h2? h2-options ssl-port host max-idle-time))
+                     http? (conj (http-connector server http-configuration h2c? h2-options port host max-idle-time proxy?))
                      http3? (conj (http3-connector server http-configuration @ssl-factory ssl-port host)))]
     (when (and ssl?
                (not (false? ssl-hot-reload?))
@@ -280,6 +338,8 @@
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
+  :h2-options - map with options specific for http2 (all setters from https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/http2/server/AbstractHTTP2ServerConnectionFactory.html,
+                kebab cased without \"set\", e.g. setMaxConcurrentStreams -> max-concurrent-streams)
   :proxy? - enable the proxy protocol on plain socket port (see http://www.eclipse.org/jetty/documentation/9.4.x/configuring-connectors.html#_proxy_protocol)
   :wrap-jetty-handler - a wrapper fn that wraps default jetty handler into another, default to `identity`, not that it's not a ring middleware
   :sni-required? - require sni for secure connection, default to false
