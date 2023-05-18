@@ -167,45 +167,48 @@
                  max-frame-length max-header-block-fragment max-setting-keys
                  ^RateControl$Factory rate-control-factory
                  stream-idle-timeout use-input-direct-byte-buffers use-output-direct-byte-buffers]}
-         h2-options]
+         h2-options
+         
+         option-provided?
+         #(contains? h2-options %)]
      (cond-> factory-from-http-config
-       (boolean? connect-protocol-enabled)
+       (option-provided? :connect-protocol-enabled)
        (doto (.setConnectProtocolEnabled connect-protocol-enabled))
 
-       (contains? h2-options :flow-control-strategy-factory)
+       (option-provided? :flow-control-strategy-factory)
        (doto (.setFlowControlStrategyFactory flow-control-strategy-factory))
 
-       initial-session-recv-window
+       (option-provided? :initial-session-recv-window)
        (doto (.setInitialSessionRecvWindow initial-session-recv-window))
 
-       initial-stream-recv-window
+       (option-provided? :initial-stream-recv-window)
        (doto (.setInitialStreamRecvWindow initial-stream-recv-window))
 
-       max-concurrent-streams
+       (option-provided? :max-concurrent-streams)
        (doto (.setMaxConcurrentStreams max-concurrent-streams))
 
-       max-dynamic-table-size
+       (option-provided? :max-dynamic-table-size)
        (doto (.setMaxDynamicTableSize max-dynamic-table-size))
 
-       max-frame-length
+       (option-provided? :max-frame-length)
        (doto (.setMaxFrameLength max-frame-length))
 
-       max-header-block-fragment
+       (option-provided? :max-header-block-fragment)
        (doto (.setMaxHeaderBlockFragment max-header-block-fragment))
 
-       max-setting-keys
+       (option-provided? :max-setting-keys)
        (doto (.setMaxSettingsKeys max-setting-keys))
 
-       rate-control-factory
+       (option-provided? :rate-control-factory)
        (doto (.setRateControlFactory rate-control-factory))
 
-       stream-idle-timeout
+       (option-provided? :stream-idle-timeout)
        (doto (.setStreamIdleTimeout stream-idle-timeout))
 
-       (boolean? use-input-direct-byte-buffers)
+       (option-provided? :use-input-direct-byte-buffers)
        (doto (.setUseInputDirectByteBuffers use-input-direct-byte-buffers))
 
-       (boolean? use-output-direct-byte-buffers)
+       (option-provided? :use-output-direct-byte-buffers)
        (doto (.setUseOutputDirectByteBuffers use-output-direct-byte-buffers))))))
 
 (defn- https-connector [server http-configuration ssl-context-factory h2? h2-options port host max-idle-time]
