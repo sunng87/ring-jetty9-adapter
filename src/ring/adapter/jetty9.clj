@@ -237,8 +237,6 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
-(boolean? true)
-
 (defn- http3-connector [& args]
   ;; load http3 module dynamically
   (let [http3-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/http3-connector)]
