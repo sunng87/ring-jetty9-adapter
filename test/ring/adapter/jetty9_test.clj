@@ -8,7 +8,8 @@
     [org.eclipse.jetty.http2.server AbstractHTTP2ServerConnectionFactory]
     [org.eclipse.jetty.http2.frames Frame SettingsFrame]
     [org.eclipse.jetty.http2.parser WindowRateControl$Factory]
-    [org.eclipse.jetty.http2 BufferingFlowControlStrategy FlowControlStrategy$Factory]))
+    [org.eclipse.jetty.http2 BufferingFlowControlStrategy FlowControlStrategy$Factory]
+    [org.eclipse.jetty.http3.server HTTP3ServerConnector AbstractHTTP3ServerConnectionFactory]))
 
 (defn dummy-app [req]
   {:status 200})
@@ -143,6 +144,101 @@
                  (map get-h2-factory-options))]
         (doseq [fo factories-options]
           (is (= fo h2-options)))))))
+
+(defn- get-quic-options
+  [http3-server-connector]
+  (->> (.getQuicConfiguration http3-server-connector)
+       ((juxt
+         #(.getBidirectionalStreamRecvWindow %)
+         #(.isDisableActiveMigration %)
+         #(.getMaxBidirectionalRemoteStreams %)
+         #(.getMaxUnidirectionalRemoteStreams %)
+         #(.getProtocols %)
+         #(.getSessionRecvWindow %)
+         #(.getUnidirectionalStreamRecvWindow %)
+         #(.isVerifyPeerCertificates %)))
+       (zipmap [:bidirectional-stream-recv-window
+                :disable-active-migration
+                :max-bidirectional-remote-streams
+                :max-unidirectional-remote-streams
+                :protocols
+                :session-recv-window
+                :unidirectional-stream-recv-window
+                :verify-peer-certificates])))
+
+(deftest http3-quic-options-test
+  (let [http3-options
+        {:bidirectional-stream-recv-window 1
+         :disable-active-migration true
+         :max-bidirectional-remote-streams 1
+         :max-unidirectional-remote-streams 1
+         :protocols ["some"]
+         :session-recv-window 1
+         :unidirectional-stream-recv-window 1
+         :verify-peer-certificates true}]
+    (with-jetty [server [dummy-app {:ssl-port        50524
+                                    :port            50523
+                                    :ssl?            true
+                                    :join?           false
+                                    :http3?          true
+                                    :http3-options   http3-options
+                                    :keystore        "dev-resources/keystore.jks"
+                                    :key-password    "111111"
+                                    :keystore-type   "jks"}]]
+      (let [quic-options
+            (->> (.getConnectors server)
+                 (filter #(isa? (type %) HTTP3ServerConnector))
+                 (map get-quic-options))]
+        (doseq [qo quic-options]
+          (is (= qo http3-options)))))))
+
+(defn- get-http3-options
+  [http3-server-connection-factory]
+  (->> (.getHTTP3Configuration http3-server-connection-factory)
+       ((juxt
+         #(.getInputBufferSize %)
+         #(.getMaxBlockedStreams %)
+         #(.getMaxRequestHeadersSize %)
+         #(.getMaxResponseHeadersSize %)
+         #(.getOutputBufferSize %)
+         #(.getStreamIdleTimeout %)
+         #(.isUseInputDirectByteBuffers %)
+         #(.isUseOutputDirectByteBuffers %)))
+       (zipmap [:input-buffer-size
+                :max-blocked-streams
+                :max-request-headers-size
+                :max-response-headers-size
+                :output-buffer-size
+                :stream-idle-timeout
+                :use-input-direct-byte-buffers
+                :use-output-direct-byte-buffers])))
+
+(deftest http3-options-test
+  (let [http3-options
+        {:input-buffer-size 1
+         :max-blocked-streams 1
+         :max-request-headers-size 1
+         :max-response-headers-size 1
+         :output-buffer-size 1
+         :stream-idle-timeout 1
+         :use-input-direct-byte-buffers false
+         :use-output-direct-byte-buffers false}]
+    (with-jetty [server [dummy-app {:ssl-port        50524
+                                    :port            50523
+                                    :ssl?            true
+                                    :join?           false
+                                    :http3?          true
+                                    :http3-options   http3-options
+                                    :keystore        "dev-resources/keystore.jks"
+                                    :key-password    "111111"
+                                    :keystore-type   "jks"}]]
+      (let [http3-factory-options
+            (->> (.getConnectors server)
+                 (mapcat #(.getConnectionFactories %))
+                 (filter #(isa? (type %) AbstractHTTP3ServerConnectionFactory))
+                 (map get-http3-options))]
+        (doseq [fo http3-factory-options]
+          (is (= fo http3-options)))))))
 
 #_(deftest websocket-test
     (with-jetty [server [dummy-app {:port       50524
