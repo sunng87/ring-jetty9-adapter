@@ -345,7 +345,7 @@
   :sni-required? - require sni for secure connection, default to false
   :sni-host-check? - enable host check for secure connection, default to true
   :http3? - enable http3 protocol, make sure you have `info.sunng/ring-jetty9-adapter-http3` package on classpath
-  :http3-options - map with options specific for http2 
+  :http3-options - map with options specific for http3 
                   (all setters from https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/http3/HTTP3Configuration.html
                    and https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/quic/common/QuicConfiguration.html,
                    kebab cased without \"set\", e.g. setStreamIdleTimeout -> stream-idle-timeout)"
