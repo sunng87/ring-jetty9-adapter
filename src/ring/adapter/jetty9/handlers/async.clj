@@ -28,9 +28,7 @@
    ^HttpServletResponse response]
   (try
     (let [[handler options] (.state this)
-          {:as options
-           :keys [async-timeout]
-           :or {async-timeout 30000}} options
+          async-timeout (:async-timeout options 30000)
           ^AsyncContext context (doto (.startAsync request)
                                   (.setTimeout async-timeout))]
       (handler
