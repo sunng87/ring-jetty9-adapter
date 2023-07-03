@@ -12,7 +12,8 @@
     [org.eclipse.jetty.http3.server HTTP3ServerConnector AbstractHTTP3ServerConnectionFactory]))
 
 (defn dummy-app [req]
-  {:status 200})
+  {:status 200
+   :body "yes"})
 
 (def websocket-handler
   {:on-connect (fn [ws])
@@ -35,7 +36,16 @@
                                   :websockets {"/path" websocket-handler}}]]
     (is server)
     (let [resp (client/get "http://localhost:50524/")]
-      (is (= 200 (:status resp))))))
+      (is (= 200 (:status resp)))
+      (is (= "yes" (:body resp))))))
+
+(deftest var-handler
+  (with-jetty [server [#'dummy-app {:port 50524
+                                    :join? false}]]
+    (is server)
+    (let [resp (client/get "http://localhost:50524/")]
+      (is (= 200 (:status resp)))
+      (is (= "yes" (:body resp))))))
 
 (defn ssl-context []
   (less-ssl/ssl-context "dev-resources/test/key.pem"

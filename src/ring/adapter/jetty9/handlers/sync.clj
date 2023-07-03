@@ -8,7 +8,7 @@
   (:gen-class
     :name ring.adapter.jetty9.handlers.SyncProxyHandler
     :extends org.eclipse.jetty.servlet.ServletHandler
-    :state ringHandler
+    :state state
     :init init
     :constructors {[clojure.lang.IFn
                     clojure.lang.IPersistentMap] []}
@@ -16,7 +16,7 @@
 
 (defn -init
   [ring-handler opts]
-  [[] (with-meta ring-handler opts)])
+  [[] [ring-handler opts]])
 
 (defn -doHandle
   "Synchronous override for `ServletHandler.doHandle"
@@ -26,13 +26,13 @@
    ^HttpServletRequest request
    ^HttpServletResponse response]
   (try
-    (let [handler      (.ringHandler this)
+    (let [[handler options] (.state this)
           response-map (-> request
                            common/build-request-map
                            handler
                            common/normalize-response)]
       (if-let [ws (common/websocket-upgrade-response? response-map)]
-        (ws/upgrade-websocket request response ws (meta handler))
+        (ws/upgrade-websocket request response ws options)
         (servlet/update-servlet-response response response-map)))
     (catch Throwable e
       (.sendError response 500 (.getMessage e)))

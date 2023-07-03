@@ -9,7 +9,7 @@
   (:gen-class
     :name ring.adapter.jetty9.handlers.AsyncProxyHandler
     :extends org.eclipse.jetty.servlet.ServletHandler
-    :state ringHandler
+    :state state
     :init init
     :constructors {[clojure.lang.IFn
                     clojure.lang.IPersistentMap] []}
@@ -17,7 +17,7 @@
 
 (defn -init
   [ring-handler opts]
-  [[] (with-meta ring-handler opts)])
+  [[] [ring-handler opts]])
 
 (defn -doHandle
   "Asynchronous override for `ServletHandler.doHandle"
@@ -27,10 +27,8 @@
    ^HttpServletRequest request
    ^HttpServletResponse response]
   (try
-    (let [handler (.ringHandler this)
-          {:as options
-           :keys [async-timeout]
-           :or {async-timeout 30000}} (meta handler)
+    (let [[handler options] (.state this)
+          async-timeout (:async-timeout options 30000)
           ^AsyncContext context (doto (.startAsync request)
                                   (.setTimeout async-timeout))]
       (handler
