@@ -3,11 +3,11 @@
     [ring.adapter.jetty9.common :as common]
     [ring.adapter.jetty9.servlet :as servlet]
     [ring.adapter.jetty9.websocket :as ws])
-  (:import [jakarta.servlet.http HttpServletRequest HttpServletResponse]
-           [org.eclipse.jetty.server Request])
+  (:import [org.eclipse.jetty.server Request Response]
+           [org.eclipse.jetty.util Callback])
   (:gen-class
     :name ring.adapter.jetty9.handlers.SyncProxyHandler
-    :extends org.eclipse.jetty.servlet.ServletHandler
+    :extends org.eclipse.jetty.server.Handler$Abstract
     :state state
     :init init
     :constructors {[clojure.lang.IFn
@@ -18,13 +18,13 @@
   [ring-handler opts]
   [[] [ring-handler opts]])
 
-(defn -doHandle
+(defn -handle
   "Synchronous override for `ServletHandler.doHandle"
   [^ring.adapter.jetty9.handlers.SyncProxyHandler this
    _
-   ^Request base-request
-   ^HttpServletRequest request
-   ^HttpServletResponse response]
+   ^Request request
+   ^Response response
+   ^Callback callback]
   (try
     (let [[handler options] (.state this)
           response-map (-> request
