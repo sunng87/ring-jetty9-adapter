@@ -5,16 +5,13 @@
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
-            ProxyConnectionFactory]
-           [org.eclipse.jetty.servlet ServletContextHandler ServletHandler]
+            ProxyConnectionFactory Handler$Abstract]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory SslContextFactory$Server]
            [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
-           [jakarta.servlet.http HttpServletRequest HttpServletResponse]
-           [jakarta.servlet AsyncContext]
            [org.eclipse.jetty.http2 HTTP2Cipher FlowControlStrategy$Factory]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory AbstractHTTP2ServerConnectionFactory]
@@ -168,7 +165,7 @@
                  ^RateControl$Factory rate-control-factory
                  stream-idle-timeout use-input-direct-byte-buffers use-output-direct-byte-buffers]}
          h2-options
-         
+
          option-provided?
          #(contains? h2-options %)]
      (cond-> factory-from-http-config
@@ -345,7 +342,7 @@
   :sni-required? - require sni for secure connection, default to false
   :sni-host-check? - enable host check for secure connection, default to true
   :http3? - enable http3 protocol, make sure you have `info.sunng/ring-jetty9-adapter-http3` package on classpath
-  :http3-options - map with options specific for http3 
+  :http3-options - map with options specific for http3
                   (all setters from https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/http3/HTTP3Configuration.html
                    and https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/quic/common/QuicConfiguration.html,
                    kebab cased without \"set\", e.g. setStreamIdleTimeout -> stream-idle-timeout)"
