@@ -1,14 +1,12 @@
 (ns ring.adapter.jetty9.handlers.async
   (:require
     [ring.adapter.jetty9.common :as common]
-    [ring.adapter.jetty9.servlet :as servlet]
     [ring.adapter.jetty9.websocket :as ws])
-  (:import [jakarta.servlet AsyncContext]
-           [jakarta.servlet.http HttpServletRequest HttpServletResponse]
-           [org.eclipse.jetty.server Request])
+  (:import [org.eclipse.jetty.server Request Response]
+           [org.eclipse.jetty.util Callback])
   (:gen-class
     :name ring.adapter.jetty9.handlers.AsyncProxyHandler
-    :extends org.eclipse.jetty.servlet.ServletHandler
+    :extends org.eclipse.jetty.server.Handler$Abstract$NonBlocking
     :state state
     :init init
     :constructors {[clojure.lang.IFn
@@ -23,9 +21,9 @@
   "Asynchronous override for `ServletHandler.doHandle"
   [^ring.adapter.jetty9.handlers.AsyncProxyHandler this
    _
-   ^Request base-request
-   ^HttpServletRequest request
-   ^HttpServletResponse response]
+   ^Request request
+   ^Response response
+   ^Callback callback]
   (try
     (let [[handler options] (.state this)
           async-timeout (:async-timeout options 30000)

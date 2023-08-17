@@ -1,7 +1,8 @@
 (ns ring.adapter.jetty9.common
   (:require [clojure.string :as string])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes]
-           [org.eclipse.jetty.io ContentSourceInputStream]
+           [org.eclipse.jetty.io.content
+            ContentSourceInputStream ContentSinkOutputStream]
            [org.eclipse.jetty.server Request Response]
 
            [java.util Locale]))
@@ -9,17 +10,15 @@
 (defprotocol RequestMapDecoder
   (build-request-map [r]))
 
-(defn set-headers
-  "Update a HttpServletResponse with a map of headers."
-  [^Response response, headers]
-  (doseq [[key val-or-vals] headers]
-    (if (string? val-or-vals)
-      (.setHeader response key val-or-vals)
-      (doseq [val val-or-vals]
-        (.addHeader response key val))))
-  ; Some headers must be set through specific methods
-  (some->> (get headers "Content-Type")
-           (.setContentType response)))
+(defn set-headers!
+  "Update response with a map of headers."
+  [^Response response headers]
+  (let [header-writer (.getHeaders response)]
+    (doseq [[key val-or-vals] headers]
+      (if (string? val-or-vals)
+        (.add header-writer key val-or-vals)
+        (doseq [val val-or-vals]
+          (.add header-writer key val))))))
 
 (defn- header-kv*
   [^HttpField header]
@@ -58,12 +57,12 @@
 
 
 (defn build-request-map
-  "Create the request map from the HttpServletRequest object."
+  "Create the request map from the Request object."
   [^Request request]
   {:server-port        (Request/getLocalPort request)
    :server-name        (Request/getLocalAddr request)
    :remote-addr        (Request/getRemoteAddr request)
-   :uri                (when-let 3[uri (.getHttpURI request)]
+   :uri                (when-let [uri (.getHttpURI request)]
                          (.getPath uri))
    :query-string       (when-let [uri (.getHttpURI request)]
                          (.getQuery uri))
@@ -71,9 +70,23 @@
                          (keyword (.getScheme uri)))
    :request-method     (keyword (.toLowerCase (.getMethod request) Locale/ENGLISH))
    :protocol           (.getProtocol (.getConnectionMetaData request))
-   :headers            (common/get-headers request)
+   :headers            (get-headers request)
    :content-type       (.. request getHeaders (get HttpHeader/CONTENT_TYPE))
    :content-length     (.. request getHeaders (get HttpHeader/CONTENT_LENGTH))
    :character-encoding (get-charset request)
    :ssl-client-cert    (get-client-cert request)
-   :body               (ContentSourceInputStream request)})
+   :body               (ContentSourceInputStream. request)})
+
+(defn update-response
+  "Update Jetty Response from given Ring response map"
+  [^Response response response-map]
+  (let [{:keys [status headers body]} response-map]
+    (cond
+      (nil? response)     (throw (NullPointerException. "Response is nil"))
+      (nil? response-map) (throw (NullPointerException. "Ring response map is nil"))
+      :else
+      (do
+        (some->> status (.setStatus response))
+        (set-headers! response headers)
+        (->> (ContentSinkOutputStream. response)
+             (protocols/write-body-to-stream body response-map))))))
