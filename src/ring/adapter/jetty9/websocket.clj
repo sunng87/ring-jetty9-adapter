@@ -1,10 +1,10 @@
 (ns ring.adapter.jetty9.websocket
   (:import [org.eclipse.jetty.servlet ServletHolder]
            [org.eclipse.jetty.websocket.api
-            WebSocketAdapter Session
+            Session
             RemoteEndpoint WriteCallback WebSocketPingPongListener]
-           [org.eclipse.jetty.websocket.server JettyWebSocketServerContainer
-            JettyWebSocketCreator JettyServerUpgradeRequest]
+           [org.eclipse.jetty.websocket.server WebSocketServerContainer
+            WebSocketCreator ServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
            [jakarta.servlet AsyncContext]
            [jakarta.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
@@ -89,8 +89,9 @@
   Object
   (-ping! [o ws] (-ping! (str o) ws)))
 
+;; TODO:
 (extend-protocol RequestMapDecoder
-  JettyServerUpgradeRequest
+  ServerUpgradeRequest
   (build-request-map [request]
     (let [servlet-request (.getHttpServletRequest request)
           base-request-map {:server-port (.getServerPort servlet-request)
@@ -109,7 +110,7 @@
              :websocket-extensions (into [] (.getExtensions request))))))
 
 (extend-protocol WebSocketProtocol
-  WebSocketAdapter
+  Session
   (send!
     ([this msg]
      (-send! msg this))
@@ -122,17 +123,17 @@
      (-ping! msg this)))
   (close!
     ([this]
-     (.. this (getSession) (close)))
+     (.close this))
     ([this status-code reason]
-     (.. this (getSession) (close status-code reason))))
+     (.close this status-code reason)))
   (remote-addr [this]
-    (.. this (getSession) (getRemoteAddress)))
+    (.getRemoteAddress this))
   (idle-timeout! [this ms]
-    (.. this (getSession) (setIdleTimeout (java.time.Duration/ofMillis ^long ms))))
+    (.setIdleTimeout this (java.time.Duration/ofMillis ^long ms)))
   (connected? [this]
-    (. this (isConnected)))
+    (.isOpen this))
   (req-of [this]
-    (build-request-map (.. this (getSession) (getUpgradeRequest)))))
+    (build-request-map (.getUpgradeRequest this))))
 
 (defn- proxy-ws-adapter
   [{:as _
@@ -172,7 +173,7 @@
 
 (defn reify-custom-ws-creator
   [ws-creator-fn]
-  (reify JettyWebSocketCreator
+  (reify WebSocketCreator
     (createWebSocket [this req resp]
       (let [req-map (build-request-map req)
             ws-results (ws-creator-fn req-map)]

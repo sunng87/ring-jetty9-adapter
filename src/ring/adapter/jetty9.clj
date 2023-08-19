@@ -5,13 +5,12 @@
             Server Request ServerConnector Connector
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
-            ProxyConnectionFactory Handler$Abstract]
+            ProxyConnectionFactory]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource Resource]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory SslContextFactory$Server]
-           [org.eclipse.jetty.websocket.server.config JettyWebSocketServletContainerInitializer]
            [org.eclipse.jetty.http2 HTTP2Cipher FlowControlStrategy$Factory]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory AbstractHTTP2ServerConnectionFactory]
@@ -21,8 +20,7 @@
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
     [clojure.string :as string]
-    [ring.adapter.jetty9.common :refer [RequestMapDecoder]]
-    [ring.adapter.jetty9.servlet :as servlet]
+    [ring.adapter.jetty9.common :as common]
     [ring.adapter.jetty9.websocket :as ws]))
 
 (def send! ws/send!)
@@ -35,35 +33,15 @@
 (def ws-upgrade-request? ws/ws-upgrade-request?)
 (def ws-upgrade-response ws/ws-upgrade-response)
 
-(extend-protocol RequestMapDecoder
-  HttpServletRequest
-  (build-request-map [request]
-    (servlet/build-request-map request)))
-
-(defn ^:internal wrap-proxy-handler
-  "Wraps a Jetty handler in a ServletContextHandler.
-
-   Websocket upgrades require a servlet context which makes it
-   necessary to wrap the handler in a servlet context handler."
-  [jetty-handler]
-  (doto (ServletContextHandler.)
-    ;; avoid warnings
-    #_(.setContextPath "/*")
-    (.setAllowNullPathInfo true)
-    (JettyWebSocketServletContainerInitializer/configure nil)
-    (.setServletHandler jetty-handler)))
-
 (defn ^:internal proxy-handler
   "Returns a Jetty Handler implementation for the given Ring handler."
   [handler options]
-  (wrap-proxy-handler
-    (SyncProxyHandler. handler options)))
+  (SyncProxyHandler. handler options))
 
 (defn ^:internal proxy-async-handler
   "Returns a Jetty Handler implementation for the given Ring **async** handler."
   [handler options]
-  (wrap-proxy-handler
-    (AsyncProxyHandler. handler options)))
+  (AsyncProxyHandler. handler options))
 
 (defn- http-config
   "Creates jetty http configurator"
@@ -353,10 +331,9 @@
                  join? true
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
-        ring-app-handler (wrap-jetty-handler
-                           (if async?
-                             (proxy-async-handler handler options)
-                             (proxy-handler handler options)))]
+        ring-app-handler (if async?
+                           (proxy-async-handler handler options)
+                           (proxy-handler handler options))]
     (.setHandler s ring-app-handler)
     (when-let [c configurator]
       (c s))

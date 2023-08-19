@@ -1,5 +1,6 @@
 (ns ring.adapter.jetty9.common
-  (:require [clojure.string :as string])
+  (:require [clojure.string :as string]
+            [ring.core.protocols :as protocols])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes]
            [org.eclipse.jetty.io.content
             ContentSourceInputStream ContentSinkOutputStream]

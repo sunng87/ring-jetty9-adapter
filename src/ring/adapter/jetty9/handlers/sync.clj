@@ -36,4 +36,4 @@
     (catch Throwable e
       (.sendError response 500 (.getMessage e)))
     (finally
-      (.setHandled base-request true))))
+      true)))
