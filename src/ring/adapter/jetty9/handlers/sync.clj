@@ -1,7 +1,7 @@
 (ns ring.adapter.jetty9.handlers.sync
   (:require
     [ring.adapter.jetty9.common :as common]
-    [ring.adapter.jetty9.websocket :as ws])
+    #_[ring.adapter.jetty9.websocket :as ws])
   (:import [org.eclipse.jetty.server Request Response]
            [org.eclipse.jetty.util Callback])
   (:gen-class
@@ -20,7 +20,6 @@
 (defn -handle
   "Synchronous override for `ServletHandler.doHandle"
   [^ring.adapter.jetty9.handlers.SyncProxyHandler this
-   _
    ^Request request
    ^Response response
    ^Callback callback]
@@ -30,10 +29,11 @@
                            common/build-request-map
                            handler
                            common/normalize-response)]
-      (if-let [ws (common/websocket-upgrade-response? response-map)]
+      (common/update-response response response-map)
+      #_(if-let [ws (common/websocket-upgrade-response? response-map)]
         (ws/upgrade-websocket request response ws options)
         (common/update-response response response-map)))
     (catch Throwable e
-      (.sendError response 500 (.getMessage e)))
+      (Response/writeError request response callback e))
     (finally
       true)))
