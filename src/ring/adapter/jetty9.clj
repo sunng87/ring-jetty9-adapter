@@ -7,31 +7,31 @@
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
-           [org.eclipse.jetty.util.resource Resource]
+           [org.eclipse.jetty.util.resource URLResourceFactory]
            [org.eclipse.jetty.util.thread
             QueuedThreadPool ScheduledExecutorScheduler ThreadPool]
            [org.eclipse.jetty.util.ssl KeyStoreScanner SslContextFactory SslContextFactory$Server]
            [org.eclipse.jetty.http2 HTTP2Cipher FlowControlStrategy$Factory]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory AbstractHTTP2ServerConnectionFactory]
-           [org.eclipse.jetty.http2.parser RateControl$Factory]
+           [org.eclipse.jetty.http2 RateControl$Factory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore]
-           [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
+           [ring.adapter.jetty9.handlers SyncProxyHandler #_AsyncProxyHandler])
   (:require
     [clojure.string :as string]
     [ring.adapter.jetty9.common :as common]
-    [ring.adapter.jetty9.websocket :as ws]))
+    #_[ring.adapter.jetty9.websocket :as ws]))
 
-(def send! ws/send!)
-(def ping! ws/ping!)
-(def close! ws/close!)
-(def remote-addr ws/remote-addr)
-(def idle-timeout! ws/idle-timeout!)
-(def connected? ws/connected?)
-(def req-of ws/req-of)
-(def ws-upgrade-request? ws/ws-upgrade-request?)
-(def ws-upgrade-response ws/ws-upgrade-response)
+;; (def send! ws/send!)
+;; (def ping! ws/ping!)
+;; (def close! ws/close!)
+;; (def remote-addr ws/remote-addr)
+;; (def idle-timeout! ws/idle-timeout!)
+;; (def connected? ws/connected?)
+;; (def req-of ws/req-of)
+;; (def ws-upgrade-request? ws/ws-upgrade-request?)
+;; (def ws-upgrade-response ws/ws-upgrade-response)
 
 (defn ^:internal proxy-handler
   "Returns a Jetty Handler implementation for the given Ring handler."
@@ -41,7 +41,7 @@
 (defn ^:internal proxy-async-handler
   "Returns a Jetty Handler implementation for the given Ring **async** handler."
   [handler options]
-  (AsyncProxyHandler. handler options))
+  #_(AsyncProxyHandler. handler options))
 
 (defn- http-config
   "Creates jetty http configurator"
@@ -73,14 +73,6 @@
       (.setHeaderCacheSize header-cache-size)
       (.addCustomizer secure-customizer))))
 
-(defn- detect-ssl-provider []
-  (try
-    (Class/forName "org.conscrypt.Conscrypt")
-    "Conscrypt"
-    (catch Throwable _
-      ;; fallback to default jdk provider
-      nil)))
-
 (defn- ^SslContextFactory$Server ssl-context-factory
   [{:as options
     :keys [keystore keystore-type key-password client-auth key-manager-password
@@ -89,12 +81,11 @@
            ssl-context]}]
   (let [context-server (SslContextFactory$Server.)]
     (.setCipherComparator context-server HTTP2Cipher/COMPARATOR)
-    (let [ssl-provider (or ssl-provider (detect-ssl-provider))]
-      (.setProvider context-server ssl-provider))
+    (.setProvider context-server ssl-provider)
     ;; classpath support
     (if (string? keystore)
       (if (string/starts-with? keystore "classpath:")
-        (.setKeyStoreResource context-server (Resource/newSystemResource (subs keystore 10)))
+        (.setKeyStoreResource context-server (.newSystemResource (URLResourceFactory.) (subs keystore 10)))
         (.setKeyStorePath context-server keystore))
       (.setKeyStore context-server ^KeyStore keystore))
     (when (string? keystore-type)
