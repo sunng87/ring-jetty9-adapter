@@ -1,6 +1,5 @@
 (ns ring.adapter.jetty9.websocket
-  (:import [org.eclipse.jetty.servlet ServletHolder]
-           [org.eclipse.jetty.websocket.api
+  (:import [org.eclipse.jetty.websocket.api
             Session
             RemoteEndpoint WriteCallback WebSocketPingPongListener]
            [org.eclipse.jetty.websocket.server WebSocketServerContainer
