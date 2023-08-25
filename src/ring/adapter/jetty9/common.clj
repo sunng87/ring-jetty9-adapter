@@ -2,14 +2,9 @@
   (:require [clojure.string :as string]
             [ring.core.protocols :as protocols])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes]
-           [org.eclipse.jetty.io.content
-            ContentSourceInputStream ContentSinkOutputStream]
            [org.eclipse.jetty.server Request Response]
-
+           [org.eclipse.jetty.io Content$Sink]
            [java.util Locale]))
-
-(defprotocol RequestMapDecoder
-  (build-request-map [r]))
 
 (defn set-headers!
   "Update response with a map of headers."
@@ -17,9 +12,9 @@
   (let [header-writer (.getHeaders response)]
     (doseq [[key val-or-vals] headers]
       (if (string? val-or-vals)
-        (.add header-writer key val-or-vals)
+        (.add header-writer ^String key ^String val-or-vals)
         (doseq [val val-or-vals]
-          (.add header-writer key val))))))
+          (.add header-writer ^String key ^String val))))))
 
 (defn- header-kv*
   [^HttpField header]
@@ -28,8 +23,7 @@
 (defn get-headers
   "Creates a name/value map of all the request headers."
   [^Request request]
-  (let [headers (.getHeaders request)]
-    (into {} (map header-kv* headers))))
+  (into {} (map header-kv* headers) (.getHeaders request)))
 
 (defonce noop (constantly nil))
 
@@ -76,7 +70,7 @@
    :content-length     (.. request getHeaders (get HttpHeader/CONTENT_LENGTH))
    :character-encoding (get-charset request)
    :ssl-client-cert    (get-client-cert request)
-   :body               (ContentSourceInputStream. request)})
+   :body               (Request/asInputStream request)})
 
 (defn update-response
   "Update Jetty Response from given Ring response map"
@@ -89,5 +83,6 @@
       (do
         (some->> status (.setStatus response))
         (set-headers! response headers)
-        (->> (ContentSinkOutputStream. response)
-             (protocols/write-body-to-stream body response-map))))))
+        (->>
+         (Content$Sink/asOutputStream response)
+         (protocols/write-body-to-stream body response-map))))))
