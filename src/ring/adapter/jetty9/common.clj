@@ -23,7 +23,7 @@
 (defn get-headers
   "Creates a name/value map of all the request headers."
   [^Request request]
-  (into {} (map header-kv* headers) (.getHeaders request)))
+  (into {} (map header-kv*) (.getHeaders request)))
 
 (defonce noop (constantly nil))
 
