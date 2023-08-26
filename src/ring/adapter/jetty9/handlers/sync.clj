@@ -31,8 +31,9 @@
                            common/normalize-response)]
       (if-let [ws (common/websocket-upgrade-response? response-map)]
         (ws/upgrade-websocket request response callback ws options)
-        (common/update-response response response-map)))
+        (do
+          (common/update-response response response-map)
+          true)))
     (catch Throwable e
-      (Response/writeError request response callback e))
-    (finally
+      (Response/writeError request response callback e)
       true)))

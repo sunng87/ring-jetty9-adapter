@@ -126,24 +126,26 @@
          on-bytes noop
          on-ping noop
          on-pong noop}}]
-  ;; TODO: save session
-  (reify Session$Listener
-    (^void onWebSocketOpen [this ^Session session]
-     (println "Open")
-     (on-connect this))
-    (^void onWebSocketError [this ^Throwable e]
-     (on-error this e))
-    (^void onWebSocketText [this ^String message]
-     (println message)
-     (on-text this message))
-    (^void onWebSocketClose [this ^int status ^String reason]
-     (on-close this status reason))
-    (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
-     (on-bytes this payload))
-    (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
-     (on-ping this bytebuffer))
-    (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
-     (on-pong this bytebuffer))))
+  (let [session (atom nil)]
+    (reify Session$Listener
+      (^void onWebSocketOpen [this ^Session current-session]
+       (println "opened")
+       (on-connect current-session)
+       ;; save session
+       (reset! session current-session))
+      (^void onWebSocketError [this ^Throwable e]
+       (on-error @session e))
+      (^void onWebSocketText [this ^String message]
+       (println @session message)
+       (on-text @session message))
+      (^void onWebSocketClose [this ^int status ^String reason]
+       (on-close @session status reason))
+      (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
+       (on-bytes @session payload))
+      (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
+       (on-ping @session bytebuffer))
+      (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
+       (on-pong @session bytebuffer)))))
 
 (defn reify-default-ws-creator
   [ws-fns]
