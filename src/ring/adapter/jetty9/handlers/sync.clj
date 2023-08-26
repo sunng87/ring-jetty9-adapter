@@ -1,7 +1,7 @@
 (ns ring.adapter.jetty9.handlers.sync
   (:require
     [ring.adapter.jetty9.common :as common]
-    #_[ring.adapter.jetty9.websocket :as ws])
+    [ring.adapter.jetty9.websocket :as ws])
   (:import [org.eclipse.jetty.server Request Response]
            [org.eclipse.jetty.util Callback])
   (:gen-class
@@ -29,9 +29,8 @@
                            common/build-request-map
                            handler
                            common/normalize-response)]
-      (common/update-response response response-map)
-      #_(if-let [ws (common/websocket-upgrade-response? response-map)]
-        (ws/upgrade-websocket request response ws options)
+      (if-let [ws (common/websocket-upgrade-response? response-map)]
+        (ws/upgrade-websocket request response callback ws options)
         (common/update-response response response-map)))
     (catch Throwable e
       (Response/writeError request response callback e))
