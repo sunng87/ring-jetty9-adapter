@@ -2,10 +2,11 @@
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
   (:import [org.eclipse.jetty.server
-            Server Request ServerConnector Connector
+            Server Request ServerConnector Connector Handler
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
+           [org.eclipse.jetty.server.handler ContextHandler]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource URLResourceFactory]
            [org.eclipse.jetty.util.thread
@@ -21,17 +22,17 @@
   (:require
     [clojure.string :as string]
     [ring.adapter.jetty9.common :as common]
-    #_[ring.adapter.jetty9.websocket :as ws]))
+    [ring.adapter.jetty9.websocket :as ws]))
 
-;; (def send! ws/send!)
-;; (def ping! ws/ping!)
-;; (def close! ws/close!)
-;; (def remote-addr ws/remote-addr)
-;; (def idle-timeout! ws/idle-timeout!)
-;; (def connected? ws/connected?)
-;; (def req-of ws/req-of)
-;; (def ws-upgrade-request? ws/ws-upgrade-request?)
-;; (def ws-upgrade-response ws/ws-upgrade-response)
+(def send! ws/send!)
+(def ping! ws/ping!)
+(def close! ws/close!)
+(def remote-addr ws/remote-addr)
+(def idle-timeout! ws/idle-timeout!)
+(def connected? ws/connected?)
+(def req-of ws/req-of)
+(def ws-upgrade-request? ws/ws-upgrade-request?)
+(def ws-upgrade-response ws/ws-upgrade-response)
 
 (defn ^:internal proxy-handler
   "Returns a Jetty Handler implementation for the given Ring handler."
@@ -154,10 +155,10 @@
        (doto (.setMaxConcurrentStreams max-concurrent-streams))
 
        (option-provided? :max-dynamic-table-size)
-       (doto (.setMaxDynamicTableSize max-dynamic-table-size))
+       (doto (.setMaxDecoderTableCapacity max-dynamic-table-size))
 
        (option-provided? :max-frame-length)
-       (doto (.setMaxFrameLength max-frame-length))
+       (doto (.setMaxFrameSize max-frame-length))
 
        (option-provided? :max-header-block-fragment)
        (doto (.setMaxHeaderBlockFragment max-header-block-fragment))
@@ -322,10 +323,13 @@
                  join? true
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
+        context-handler (ContextHandler. "/")
         ring-app-handler (if async?
                            (proxy-async-handler handler options)
                            (proxy-handler handler options))]
-    (.setHandler s ring-app-handler)
+    (.setHandler context-handler ^Handler ring-app-handler)
+    (.setHandler s ^Handler context-handler)
+    (ws/ensure-container s context-handler)
     (when-let [c configurator]
       (c s))
     (.start s)
