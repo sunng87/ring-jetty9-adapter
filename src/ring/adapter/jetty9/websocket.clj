@@ -1,19 +1,17 @@
 (ns ring.adapter.jetty9.websocket
-  (:import [org.eclipse.jetty.websocket.api
-            Session
-            RemoteEndpoint WriteCallback WebSocketPingPongListener]
-           [org.eclipse.jetty.websocket.server WebSocketServerContainer
+  (:import [org.eclipse.jetty.server Request Response Server]
+           [org.eclipse.jetty.server.handler ContextHandler]
+           [org.eclipse.jetty.websocket.api Session Session$Listener Callback]
+           [org.eclipse.jetty.websocket.server ServerWebSocketContainer
             WebSocketCreator ServerUpgradeRequest]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
-           [jakarta.servlet AsyncContext]
-           [jakarta.servlet.http HttpServlet HttpServletRequest HttpServletResponse]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
            [java.util Locale]
            [java.time Duration])
   (:require [clojure.string :as string]
-            [ring.adapter.jetty9.common :refer [RequestMapDecoder build-request-map
-                                                get-headers set-headers noop]]))
+            [ring.adapter.jetty9.common :refer [build-request-map
+                                                get-headers set-headers! noop]]))
 
 (defprotocol WebSocketProtocol
   (send! [this msg] [this msg callback])
@@ -34,11 +32,11 @@
   [{:keys [write-failed write-success]
     :or   {write-failed  noop
            write-success noop}}]
-  (reify WriteCallback
-    (writeFailed [_ throwable]
-      (write-failed throwable))
-    (writeSuccess [_]
-      (write-success))))
+  (reify Callback
+    (succeed [_]
+      (write-success))
+    (fail [_ throwable]
+      (write-failed throwable))))
 
 (extend-protocol WebSocketSend
   (Class/forName "[B")
@@ -51,36 +49,34 @@
   ByteBuffer
   (-send!
     ([bb ws]
-     (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb)))
+     (.sendBinary ^Session ws ^ByteBuffer bb ^Callback (write-callback {})))
     ([bb ws callback]
-     (-> ^WebSocketAdapter ws .getRemote (.sendBytes ^ByteBuffer bb ^WriteCallback (write-callback callback)))))
+     (.sendBinary ^Session ws ^ByteBuffer bb ^Callback (write-callback callback))))
 
   String
   (-send!
     ([s ws]
-     (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s)))
+     (.sendText ^Session ws ^String s ^Callback (write-callback {})))
     ([s ws callback]
-     (-> ^WebSocketAdapter ws .getRemote (.sendString ^String s ^WriteCallback (write-callback callback)))))
+     (.sendText ^Session ws ^String s ^Callback (write-callback callback))))
 
   IFn
   (-send! [f ws]
-    (-> ^WebSocketAdapter ws .getRemote f))
+    (f ws))
 
   Object
-  (send!
+  (-send!
     ([this ws]
-     (-> ^WebSocketAdapter ws .getRemote
-         (.sendString ^RemoteEndpoint (str this))))
+     (-send! ws (str this)))
     ([this ws callback]
-     (-> ^WebSocketAdapter ws .getRemote
-         (.sendString ^RemoteEndpoint (str this) ^WriteCallback (write-callback callback))))))
+     (-send! ws (str this) callback))))
 
 (extend-protocol WebSocketPing
   (Class/forName "[B")
   (-ping! [ba ws] (-ping! (ByteBuffer/wrap ba) ws))
 
   ByteBuffer
-  (-ping! [bb ws] (-> ^WebSocketAdapter ws .getRemote (.sendPing ^ByteBuffer bb)))
+  (-ping! [bb ws] (.sendPing ^Session ws ^ByteBuffer bb ^Callback (write-callback {})))
 
   String
   (-ping! [s ws] (-ping! (.getBytes ^String s) ws))
@@ -88,25 +84,11 @@
   Object
   (-ping! [o ws] (-ping! (str o) ws)))
 
-;; TODO:
-(extend-protocol RequestMapDecoder
-  ServerUpgradeRequest
-  (build-request-map [request]
-    (let [servlet-request (.getHttpServletRequest request)
-          base-request-map {:server-port (.getServerPort servlet-request)
-                            :server-name (.getServerName servlet-request)
-                            :remote-addr (.getRemoteAddr servlet-request)
-                            :uri (.getRequestURI servlet-request)
-                            :query-string (.getQueryString servlet-request)
-                            :scheme (keyword (.getScheme servlet-request))
-                            :request-method (keyword (.toLowerCase (.getMethod servlet-request) Locale/ENGLISH))
-                            :protocol (.getProtocol servlet-request)
-                            :headers (get-headers servlet-request)
-                            :ssl-client-cert (first (.getAttribute servlet-request
-                                                                   "jakarta.servlet.request.X509Certificate"))}]
-      (assoc base-request-map
-             :websocket-subprotocols (into [] (.getSubProtocols request))
-             :websocket-extensions (into [] (.getExtensions request))))))
+(defn build-upgrade-request-map [^ServerUpgradeRequest request]
+  (let [base-request-map (build-request-map request)]
+    (assoc base-request-map
+           :websocket-subprotocols (into [] (.getSubProtocols request))
+           :websocket-extensions (into [] (.getExtensions request)))))
 
 (extend-protocol WebSocketProtocol
   Session
@@ -124,15 +106,15 @@
     ([this]
      (.close this))
     ([this status-code reason]
-     (.close this status-code reason)))
+     (.close this status-code reason (write-callback {}))))
   (remote-addr [this]
-    (.getRemoteAddress this))
+    (.getRemoteSocketAddress this))
   (idle-timeout! [this ms]
     (.setIdleTimeout this (java.time.Duration/ofMillis ^long ms)))
   (connected? [this]
     (.isOpen this))
   (req-of [this]
-    (build-request-map (.getUpgradeRequest this))))
+    (build-upgrade-request-map (.getUpgradeRequest this))))
 
 (defn- proxy-ws-adapter
   [{:as _
@@ -144,41 +126,40 @@
          on-bytes noop
          on-ping noop
          on-pong noop}}]
-  (proxy [WebSocketAdapter WebSocketPingPongListener] []
-    (onWebSocketConnect [^Session session]
-      (let [^WebSocketAdapter this this]
-        (proxy-super onWebSocketConnect session))
-      (on-connect this))
-    (onWebSocketError [^Throwable e]
-      (on-error this e))
-    (onWebSocketText [^String message]
-      (on-text this message))
-    (onWebSocketClose [statusCode ^String reason]
-      (let [^WebSocketAdapter this this]
-        (proxy-super onWebSocketClose statusCode reason))
-      (on-close this statusCode reason))
-    (onWebSocketBinary [^bytes payload offset len]
-      (on-bytes this payload offset len))
-    (onWebSocketPing [^ByteBuffer bytebuffer]
-      (on-ping this bytebuffer))
-    (onWebSocketPong [^ByteBuffer bytebuffer]
-      (on-pong this bytebuffer))))
+  ;; TODO: save session
+  (reify Session$Listener
+    (^void onWebSocketOpen [this ^Session session]
+     (println "Open")
+     (on-connect this))
+    (^void onWebSocketError [this ^Throwable e]
+     (on-error this e))
+    (^void onWebSocketText [this ^String message]
+     (println message)
+     (on-text this message))
+    (^void onWebSocketClose [this ^int status ^String reason]
+     (on-close this status reason))
+    (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
+     (on-bytes this payload))
+    (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
+     (on-ping this bytebuffer))
+    (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
+     (on-pong this bytebuffer))))
 
 (defn reify-default-ws-creator
   [ws-fns]
-  (reify JettyWebSocketCreator
-    (createWebSocket [this _ _]
+  (reify WebSocketCreator
+    (createWebSocket [this _ _ _]
       (proxy-ws-adapter ws-fns))))
 
 (defn reify-custom-ws-creator
   [ws-creator-fn]
   (reify WebSocketCreator
-    (createWebSocket [this req resp]
-      (let [req-map (build-request-map req)
+    (createWebSocket [this req resp cb]
+      (let [req-map (build-upgrade-request-map req)
             ws-results (ws-creator-fn req-map)]
         (if-let [{:keys [code message headers]} (:error ws-results)]
-          (do (set-headers resp headers)
-              (.sendError resp code message))
+          (do (set-headers! resp headers)
+              (Response/writeError resp cb ^int code ^String message cb))
           (do
             (when-let [sp (:subprotocol ws-results)]
               (.setAcceptedSubProtocol resp sp))
@@ -190,33 +171,23 @@
             (proxy-ws-adapter ws-results)))))))
 
 (defn upgrade-websocket
-  ([req res ws options]
-   (upgrade-websocket req res nil ws options))
-  ([^HttpServletRequest req
-    ^HttpServletResponse res
-    ^AsyncContext async-context
-    ws
-    {:as _options
-     :keys [ws-max-idle-time
-            ws-max-text-message-size]
-     :or {ws-max-idle-time 500000
-          ws-max-text-message-size 65536}}]
-   {:pre [(or (map? ws) (fn? ws))]}
-   (let [creator (if (map? ws)
-                   (reify-default-ws-creator ws)
-                   (reify-custom-ws-creator ws))
-         container (JettyWebSocketServerContainer/getContainer (.getServletContext req))]
-     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
-     (.setMaxTextMessageSize container ws-max-text-message-size)
-     (.upgrade container creator req res)
-     (when async-context
-       (.complete async-context)))))
-
-#_(defn proxy-ws-servlet [ws options]
-  (ServletHolder.
-   (proxy [HttpServlet] []
-     (doGet [req res]
-       (upgrade-websocket req res ws options)))))
+  [^Request req
+   ^Response resp
+   ^Callback cb
+   ws
+   {:as _options
+    :keys [ws-max-idle-time
+           ws-max-text-message-size]
+    :or {ws-max-idle-time 500000
+         ws-max-text-message-size 65536}}]
+  {:pre [(or (map? ws) (fn? ws))]}
+  (let [container (ServerWebSocketContainer/get (.getContext req))
+        creator (if (map? ws)
+                  (reify-default-ws-creator ws)
+                  (reify-custom-ws-creator ws))]
+    (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
+    (.setMaxTextMessageSize container ws-max-text-message-size)
+    (.upgrade container creator req resp cb)))
 
 (defn ws-upgrade-request?
   "Checks if a request is a websocket upgrade request.
@@ -255,3 +226,6 @@
    :headers {"upgrade" "websocket"
              "connection" "upgrade"}
    :ws ws-handler})
+
+(defn ensure-container [^Server server ^ContextHandler context-handler]
+  (ServerWebSocketContainer/ensure server context-handler))
