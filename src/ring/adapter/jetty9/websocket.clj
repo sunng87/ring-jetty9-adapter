@@ -1,9 +1,9 @@
 (ns ring.adapter.jetty9.websocket
   (:import [org.eclipse.jetty.server Request Response Server]
            [org.eclipse.jetty.server.handler ContextHandler]
-           [org.eclipse.jetty.websocket.api Session Session$Listener Callback]
+           [org.eclipse.jetty.websocket.api Session Session$Listener$AutoDemanding Callback]
            [org.eclipse.jetty.websocket.server ServerWebSocketContainer
-            WebSocketCreator ServerUpgradeRequest]
+            WebSocketCreator ServerUpgradeRequest WebSocketUpgradeHandler]
            [org.eclipse.jetty.websocket.common JettyExtensionConfig]
            [clojure.lang IFn]
            [java.nio ByteBuffer]
@@ -127,16 +127,14 @@
          on-ping noop
          on-pong noop}}]
   (let [session (atom nil)]
-    (reify Session$Listener
+    (reify Session$Listener$AutoDemanding
       (^void onWebSocketOpen [this ^Session current-session]
-       (println "opened")
        (on-connect current-session)
        ;; save session
        (reset! session current-session))
       (^void onWebSocketError [this ^Throwable e]
        (on-error @session e))
       (^void onWebSocketText [this ^String message]
-       (println @session message)
        (on-text @session message))
       (^void onWebSocketClose [this ^int status ^String reason]
        (on-close @session status reason))
