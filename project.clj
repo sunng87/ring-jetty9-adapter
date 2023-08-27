@@ -21,9 +21,8 @@
         #_ring.adapter.jetty9.handlers.async]
   :profiles {:dev {:dependencies [[clj-http "3.12.3"]
                                   [less-awful-ssl "1.0.6"]
-                                  [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
-                                  #_[stylefruits/gniazdo "1.1.4"]]
-                   :resource-paths ["dev-resources"]}
+                                  #_[org.slf4j/slf4j-simple "2.0.0-alpha6"]
+                                  #_[stylefruits/gniazdo "1.1.4"]]}
              :example-http2 {:source-paths ["examples/"]
                              :main ^:skip-aot rj9a.http2}
              :example-http3 {:source-paths ["examples/"]
