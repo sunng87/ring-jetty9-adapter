@@ -18,7 +18,7 @@
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
   :aot [ring.adapter.jetty9.handlers.sync
-        #_ring.adapter.jetty9.handlers.async]
+        ring.adapter.jetty9.handlers.async]
   :profiles {:dev {:dependencies [[clj-http "3.12.3"]
                                   [less-awful-ssl "1.0.6"]
                                   [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
