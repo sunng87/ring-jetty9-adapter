@@ -17,7 +17,7 @@
            [org.eclipse.jetty.http2 RateControl$Factory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore]
-           [ring.adapter.jetty9.handlers SyncProxyHandler #_AsyncProxyHandler])
+           [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
     [clojure.string :as string]
     [ring.adapter.jetty9.common :as common]
@@ -41,7 +41,7 @@
 (defn ^:internal proxy-async-handler
   "Returns a Jetty Handler implementation for the given Ring **async** handler."
   [handler options]
-  #_(AsyncProxyHandler. handler options))
+  (AsyncProxyHandler. handler options))
 
 (defn- http-config
   "Creates jetty http configurator"
