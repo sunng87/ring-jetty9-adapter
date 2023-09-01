@@ -33,7 +33,9 @@
         (ws/upgrade-websocket request response callback ws options)
         (do
           (common/update-response response response-map)
+          (.succeeded callback)
           true)))
     (catch Throwable e
       (Response/writeError request response callback e)
+      (.failed callback e)
       true)))

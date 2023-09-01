@@ -15,7 +15,7 @@
            [org.eclipse.jetty.http2 HTTP2Cipher FlowControlStrategy$Factory]
            [org.eclipse.jetty.http2.server
             HTTP2CServerConnectionFactory HTTP2ServerConnectionFactory AbstractHTTP2ServerConnectionFactory]
-           [org.eclipse.jetty.http2 RateControl$Factory]
+           [org.eclipse.jetty.http2 WindowRateControl$Factory]
            [org.eclipse.jetty.alpn.server ALPNServerConnectionFactory]
            [java.security KeyStore]
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
@@ -132,7 +132,7 @@
                  ^FlowControlStrategy$Factory flow-control-strategy-factory
                  initial-session-recv-window initial-stream-recv-window max-concurrent-streams max-dynamic-table-size
                  max-frame-length max-header-block-fragment max-setting-keys
-                 ^RateControl$Factory rate-control-factory
+                 ^WindowRateControl$Factory rate-control-factory
                  stream-idle-timeout use-input-direct-byte-buffers use-output-direct-byte-buffers]}
          h2-options
 
@@ -214,7 +214,7 @@
   [{:as options
     :keys [port max-threads min-threads threadpool-idle-timeout job-queue
            daemon? max-idle-time host ssl? ssl-port h2? h2c? h2-options http? proxy?
-           thread-pool http3? http3-options ssl-hot-reload?]
+           thread-pool http3? http3-options ssl-hot-reload? http3-pem-work-directory]
     :or {port 80
          max-threads 50
          min-threads 8
@@ -247,7 +247,9 @@
                      ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? h2-options ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? h2-options port host max-idle-time proxy?))
-                     http3? (conj (http3-connector server http-configuration http3-options @ssl-factory ssl-port host)))]
+                     http3? (conj (http3-connector server http-configuration
+                                                   (assoc http3-options :pem-work-directory http3-pem-work-directory)
+                                                   @ssl-factory ssl-port host)))]
     (when (and ssl?
                (not (false? ssl-hot-reload?))
                (some? (.getKeyStorePath ^SslContextFactory @ssl-factory)))
@@ -312,6 +314,7 @@
   :sni-required? - require sni for secure connection, default to false
   :sni-host-check? - enable host check for secure connection, default to true
   :http3? - enable http3 protocol, make sure you have `info.sunng/ring-jetty9-adapter-http3` package on classpath
+  :http3-pem-work-directory - required when http3 enabled, specify a directory as http3 pem work dir
   :http3-options - map with options specific for http3
                   (all setters from https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/http3/HTTP3Configuration.html
                    and https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/quic/common/QuicConfiguration.html,
