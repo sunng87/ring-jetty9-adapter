@@ -6,7 +6,8 @@
             HTTP3ServerConnectionFactory HTTP3ServerConnector
             AbstractHTTP3ServerConnectionFactory]
            [org.eclipse.jetty.quic.common QuicConfiguration]
-           [org.eclipse.jetty.http3.api Session$Server$Listener]))
+           [org.eclipse.jetty.http3.api Session$Server$Listener]
+           [java.nio.file Path]))
 
 (defn- http3-server-connection-factory
   "Configure http3 specific options on HTTP3ServerConnectionFactory created from HttpConfiguration"
@@ -58,7 +59,8 @@
    (let [{:keys [bidirectional-stream-recv-window disable-active-migration
                  max-bidirectional-remote-streams max-unidirectional-remote-streams
                  protocols session-recv-window
-                 unidirectional-stream-recv-window verify-peer-certificates]}
+                 unidirectional-stream-recv-window
+                 pem-work-directory]}
          http3-options
 
          ^QuicConfiguration quic-config
@@ -67,6 +69,9 @@
          option-provided?
          #(contains? http3-options %)]
      (cond-> quic-config
+       (option-provided? :pem-work-directory)
+       (doto (.setPemWorkDirectory (Path/of pem-work-directory (into-array String []))))
+
        (option-provided? :bidirectional-stream-recv-window)
        (doto (.setBidirectionalStreamRecvWindow bidirectional-stream-recv-window))
 
@@ -86,10 +91,7 @@
        (doto (.setSessionRecvWindow session-recv-window))
 
        (option-provided? :unidirectional-stream-recv-window)
-       (doto (.setUnidirectionalStreamRecvWindow unidirectional-stream-recv-window))
-
-       (option-provided? :verify-peer-certificates)
-       (doto (.setVerifyPeerCertificates verify-peer-certificates)))
+       (doto (.setUnidirectionalStreamRecvWindow unidirectional-stream-recv-window)))
      http3-connector-default)))
 
 (defn http3-connector [server http-configuration http3-options ssl-context-factory port host]

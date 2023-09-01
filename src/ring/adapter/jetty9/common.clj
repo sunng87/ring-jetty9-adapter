@@ -67,7 +67,8 @@
    :protocol           (.getProtocol (.getConnectionMetaData request))
    :headers            (get-headers request)
    :content-type       (.. request getHeaders (get HttpHeader/CONTENT_TYPE))
-   :content-length     (.. request getHeaders (get HttpHeader/CONTENT_LENGTH))
+   :content-length     (when-let [l (.. request getHeaders (get HttpHeader/CONTENT_LENGTH))]
+                         (Long/valueOf l))
    :character-encoding (get-charset request)
    :ssl-client-cert    (get-client-cert request)
    :body               (Request/asInputStream request)})
