@@ -9,6 +9,7 @@
                  [ring/ring-core "1.10.0" :exclusions [commons-io]]
                  [info.sunng/ring-jetty9-adapter-http3 "0.4.0-SNAPSHOT" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
+                 [org.eclipse.jetty/jetty-util ~jetty-version]
                  [org.eclipse.jetty.websocket/jetty-websocket-jetty-api ~jetty-version]
                  [org.eclipse.jetty.websocket/jetty-websocket-jetty-server ~jetty-version]
                  [org.eclipse.jetty.http2/jetty-http2-server ~jetty-version]
