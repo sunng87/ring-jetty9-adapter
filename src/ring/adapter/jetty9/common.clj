@@ -66,7 +66,7 @@
 
      :content-type   (.. headers (get HttpHeader/CONTENT_TYPE))
      :content-length (when-let [l (.. headers (get HttpHeader/CONTENT_LENGTH))]
-                       (long l))
+                       (Integer/valueOf l))
 
      :character-encoding (get-charset request)
      :ssl-client-cert    (get-client-cert request)
