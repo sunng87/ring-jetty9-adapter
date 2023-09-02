@@ -98,8 +98,6 @@ on [Jetty's own build](https://github.com/jetty-project/jetty-quiche-native) of
 [the quiche library](https://github.com/cloudflare/quiche). rj9a `0.17.6` made
 it an optional feature. To enable HTTP/3 support, you will need to:
 
-* Install libquiche on your system and make sure `libquiche.so` can be
-  loaded from the Clojure(Java) application.
 * In addition to rj9a, add dependency
   `[info.sunng/ring-jetty9-adapter-http3 "VERSION"]` to your clojure
   project to bring in HTTP/3 staff. Remember to replace `VERSION` with our
@@ -107,12 +105,13 @@ it an optional feature. To enable HTTP/3 support, you will need to:
   [here](https://clojars.org/info.sunng/ring-jetty9-adapter-http3)
 * Provide certficate and key just like HTTPs setup because HTTP/3 is
   secure by default. There is no plaintext fallback for now.
-* Provide option `:http3? true` to `run-jetty` to enable HTTP/3
-  protocol.
+* Provide option `:http3? true` and a work directory to for pem
+  `:http3-pem-work-directory` to `run-jetty` to enable HTTP/3 protocol.
 
 ```clojure
 (jetty/run-jetty dummy-app {:port 5000  ;; default clear-text http/1.1 port
                             :http3 true  ;; enable http/3 support
+                            :http3-pem-work-directory "/some/path" ;; a pre-created directory for quic configuration
                             :ssl-port 5443 ;; ssl-port is used by http/3
                             :keystore "dev-resources/keystore.jks"
                             :key-password "111111"
