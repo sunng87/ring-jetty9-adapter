@@ -1,15 +1,15 @@
 (ns ring.adapter.jetty9.common
-  (:require [clojure.string :as string]
-            [ring.core.protocols :as protocols])
+  (:require [ring.core.protocols :as protocols])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes]
            [org.eclipse.jetty.server Request Response SecureRequestCustomizer]
            [org.eclipse.jetty.io Content$Sink]
+           [org.eclipse.jetty.http ImmutableHttpFields HttpFields$Mutable HttpURI]
            [java.util Locale]))
 
 (defn set-headers!
   "Update response with a map of headers."
   [^Response response headers]
-  (let [header-writer (.getHeaders response)]
+  (let [^HttpFields$Mutable header-writer (.getHeaders response)]
     (doseq [[key val-or-vals] headers]
       (if (string? val-or-vals)
         (.add header-writer ^String key ^String val-or-vals)
@@ -49,28 +49,28 @@
 (defn- get-client-cert [^Request request]
   (.getAttribute request SecureRequestCustomizer/PEER_CERTIFICATES_ATTRIBUTE))
 
-
 (defn build-request-map
   "Create the request map from the Request object."
   [^Request request]
-  {:server-port        (Request/getLocalPort request)
-   :server-name        (Request/getLocalAddr request)
-   :remote-addr        (Request/getRemoteAddr request)
-   :uri                (when-let [uri (.getHttpURI request)]
-                         (.getPath uri))
-   :query-string       (when-let [uri (.getHttpURI request)]
-                         (.getQuery uri))
-   :scheme             (when-let [uri (.getHttpURI request)]
-                         (keyword (.getScheme uri)))
-   :request-method     (keyword (.toLowerCase (.getMethod request) Locale/ENGLISH))
-   :protocol           (.getProtocol (.getConnectionMetaData request))
-   :headers            (get-headers request)
-   :content-type       (.. request getHeaders (get HttpHeader/CONTENT_TYPE))
-   :content-length     (when-let [l (.. request getHeaders (get HttpHeader/CONTENT_LENGTH))]
-                         (Long/valueOf l))
-   :character-encoding (get-charset request)
-   :ssl-client-cert    (get-client-cert request)
-   :body               (Request/asInputStream request)})
+  (let [^HttpURI uri                 (.getHttpURI request)
+        ^ImmutableHttpFields headers (.getHeaders request)]
+    {:server-port    (Request/getLocalPort request)
+     :server-name    (Request/getLocalAddr request)
+     :remote-addr    (Request/getRemoteAddr request)
+     :uri            (when uri (.getPath uri))
+     :query-string   (when uri (.getQuery uri))
+     :scheme         (when uri (keyword (.getScheme uri)))
+     :request-method (keyword (.toLowerCase ^String (.getMethod request) Locale/ENGLISH))
+     :protocol       (.getProtocol (.getConnectionMetaData request))
+     :headers        (get-headers request)
+
+     :content-type   (.. headers (get HttpHeader/CONTENT_TYPE))
+     :content-length (when-let [l (.. headers (get HttpHeader/CONTENT_LENGTH))]
+                       (long l))
+
+     :character-encoding (get-charset request)
+     :ssl-client-cert    (get-client-cert request)
+     :body               (Request/asInputStream request)}))
 
 (defn update-response
   "Update Jetty Response from given Ring response map"
@@ -84,5 +84,5 @@
         (some->> status (.setStatus response))
         (set-headers! response headers)
         (->>
-         (Content$Sink/asOutputStream response)
-         (protocols/write-body-to-stream body response-map))))))
+          (Content$Sink/asOutputStream response)
+          (protocols/write-body-to-stream body response-map))))))
