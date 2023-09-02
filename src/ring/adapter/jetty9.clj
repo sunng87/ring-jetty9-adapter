@@ -268,7 +268,6 @@
   :port - the port to listen on (defaults to 80)
   :host - the hostname to listen on
   :async? - using Ring 1.6 async handler?
-  :async-timeout - the maximum time in milliseconds for an async request (default 30000)
   :join? - blocks the thread until server ends (defaults to true)
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
