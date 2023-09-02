@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [ring.core.protocols :as protocols])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes]
-           [org.eclipse.jetty.server Request Response]
+           [org.eclipse.jetty.server Request Response SecureRequestCustomizer]
            [org.eclipse.jetty.io Content$Sink]
            [java.util Locale]))
 
@@ -47,8 +47,7 @@
       (MimeTypes/getCharsetFromContentType content-type))))
 
 (defn- get-client-cert [^Request request]
-  ;; TODO: get data from SecureRequestWithTLSData
-  )
+  (.getAttribute request SecureRequestCustomizer/PEER_CERTIFICATES_ATTRIBUTE))
 
 
 (defn build-request-map
