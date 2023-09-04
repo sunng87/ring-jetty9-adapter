@@ -54,8 +54,8 @@
   [^Request request]
   (let [^HttpURI uri                 (.getHttpURI request)
         ^ImmutableHttpFields headers (.getHeaders request)]
-    {:server-port    (Request/getLocalPort request)
-     :server-name    (Request/getLocalAddr request)
+    {:server-port    (Request/getServerPort request)
+     :server-name    (Request/getServerName request)
      :remote-addr    (Request/getRemoteAddr request)
      :uri            (when uri (.getPath uri))
      :query-string   (when uri (.getQuery uri))
