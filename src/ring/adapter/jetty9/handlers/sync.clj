@@ -18,7 +18,7 @@
   [[] [ring-handler opts]])
 
 (defn -handle
-  "Synchronous override for `ServletHandler.doHandle"
+  "Synchronous override for `Handler.Abstract/handle`"
   [^ring.adapter.jetty9.handlers.SyncProxyHandler this
    ^Request request
    ^Response response
@@ -37,5 +37,4 @@
           true)))
     (catch Throwable e
       (Response/writeError request response callback e)
-      (.failed callback e)
       true)))

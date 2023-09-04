@@ -18,7 +18,7 @@
   [[] [ring-handler opts]])
 
 (defn -handle
-  "Asynchronous override for `ServletHandler.doHandle"
+  "Asynchronous override for `Handler$Abstract$NonBlocking/handle"
   [^ring.adapter.jetty9.handlers.AsyncProxyHandler this
    ^Request request
    ^Response response
