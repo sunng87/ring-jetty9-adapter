@@ -6,7 +6,7 @@
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
-           [org.eclipse.jetty.server.handler ContextHandler]
+           [org.eclipse.jetty.server.handler ContextHandler BufferedResponseHandler]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource URLResourceFactory]
            [org.eclipse.jetty.util.thread
@@ -33,6 +33,11 @@
 (def req-of ws/req-of)
 (def ws-upgrade-request? ws/ws-upgrade-request?)
 (def ws-upgrade-response ws/ws-upgrade-response)
+
+(defn ^:internal wrap-buffered-handler
+  "Wrap handler into Jetty's BufferedHandler so it's possible to compute content-length"
+  [handler]
+  (BufferedResponseHandler. handler))
 
 (defn ^:internal proxy-handler
   "Returns a Jetty Handler implementation for the given Ring handler."
@@ -326,9 +331,10 @@
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         context-handler (ContextHandler. "/")
-        ring-app-handler (if async?
-                           (proxy-async-handler handler options)
-                           (proxy-handler handler options))]
+        ring-app-handler (wrap-buffered-handler
+                          (if async?
+                            (proxy-async-handler handler options)
+                            (proxy-handler handler options)))]
     (.setHandler context-handler ^Handler ring-app-handler)
     (.setHandler s ^Handler context-handler)
     (ws/ensure-container s context-handler)
