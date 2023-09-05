@@ -23,6 +23,7 @@
    ^Request request
    ^Response response
    ^Callback callback]
+  (common/ensure-response-buffer-size! request)
   (try
     (let [[handler options] (.state this)
           ;;TODO: async timeout
