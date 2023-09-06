@@ -7,6 +7,7 @@
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
            [org.eclipse.jetty.server.handler ContextHandler BufferedResponseHandler]
+           [org.eclipse.jetty.util VirtualThreads]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource URLResourceFactory]
            [org.eclipse.jetty.util.thread
@@ -217,13 +218,14 @@
 (defn- create-server
   "Construct a Jetty Server instance."
   [{:as options
-    :keys [port max-threads min-threads threadpool-idle-timeout job-queue
+    :keys [port max-threads min-threads threadpool-idle-timeout virtual-threads? job-queue
            daemon? max-idle-time host ssl? ssl-port h2? h2c? h2-options http? proxy?
            thread-pool http3? http3-options ssl-hot-reload? http3-pem-work-directory]
     :or {port 80
          max-threads 50
          min-threads 8
          threadpool-idle-timeout 60000
+         virtual-threads? false
          job-queue nil
          daemon? false
          max-idle-time 200000
@@ -232,11 +234,15 @@
          proxy? false}}]
   {:pre [(or http? ssl? ssl-port)]}
   (let [^ThreadPool pool (or thread-pool
-                             (doto (QueuedThreadPool. (int max-threads)
-                                                      (int min-threads)
-                                                      (int threadpool-idle-timeout)
-                                                      job-queue)
-                               (.setDaemon daemon?)))
+                             (let [thread-pool (QueuedThreadPool. (int max-threads)
+                                                                  (int min-threads)
+                                                                  (int threadpool-idle-timeout)
+                                                                  job-queue)]
+                               (when virtual-threads?
+                                 (.setVirtualThreadsExecutor thread-pool
+                                                             (VirtualThreads/getDefaultVirtualThreadsExecutor)))
+                               (doto thread-pool
+                                 (.setDaemon daemon?))))
         http-configuration (http-config options)
         ssl? (or ssl? ssl-port)
         ssl-port (or ssl-port (when ssl? 443))
@@ -305,6 +311,7 @@
   :min-threads - the minimum number of threads to use (default 8), ignored if `:thread-pool` provided
   :threadpool-idle-timeout - the maximum idle time in milliseconds for a thread (default 60000), ignored if `:thread-pool` provided
   :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded), ignored if `:thread-pool` provided
+  :virtual-threads? - to enable virtual threads for thread pool, ignored if `:thread-pool` provided
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
   :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536)
