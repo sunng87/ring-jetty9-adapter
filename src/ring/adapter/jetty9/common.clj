@@ -1,6 +1,6 @@
 (ns ring.adapter.jetty9.common
   (:require [ring.core.protocols :as protocols])
-  (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes]
+  (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes MimeTypes$Type]
            [org.eclipse.jetty.server.handler BufferedResponseHandler]
            [org.eclipse.jetty.server Request Response SecureRequestCustomizer]
            [org.eclipse.jetty.io Content$Sink]
@@ -43,9 +43,9 @@
 
 (defn get-charset [^Request request]
   (when-let [content-type (.. request getHeaders (get HttpHeader/CONTENT_TYPE))]
-    (if-let [mime-type-charset (.get MimeTypes/CACHE content-type)]
-      (str mime-type-charset)
-      (MimeTypes/getCharsetFromContentType content-type))))
+    (or (when-let [^MimeTypes$Type mime (.get MimeTypes/CACHE content-type)]
+          (str (.getCharset mime)))
+        (MimeTypes/getCharsetFromContentType content-type))))
 
 (defn- get-client-cert [^Request request]
   (.getAttribute request SecureRequestCustomizer/PEER_CERTIFICATES_ATTRIBUTE))
