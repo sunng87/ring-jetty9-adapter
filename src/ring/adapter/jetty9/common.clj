@@ -41,10 +41,12 @@
   ;; need to upgrade to websockets protocol.
   (and status (== 101 status) ws))
 
+
 (defn get-charset [^Request request]
   (when-let [content-type (.. request getHeaders (get HttpHeader/CONTENT_TYPE))]
     (or (when-let [^MimeTypes$Type mime (.get MimeTypes/CACHE content-type)]
-          (str (.getCharset mime)))
+          (when-let [charset (.getCharset mime)]
+            (str charset)))
         (MimeTypes/getCharsetFromContentType content-type))))
 
 (defn- get-client-cert [^Request request]
