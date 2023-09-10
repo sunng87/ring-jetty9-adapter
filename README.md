@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/github/license/sunng87/ring-jetty9-adapter.svg?maxAge=2592000)]()
 [![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
 
-Ring adapter for Jetty 11 (although named as jetty9), with HTTP/2,
+Ring adapter for Jetty 12 and 11 (although named as jetty9), with HTTP/2,
 WebSocket and experimental HTTP/3 support.
 
 This is a simple and plain wrapper on modern Jetty versions. It
@@ -18,8 +18,14 @@ As of Ring 1.6, the official Jetty adapter has been updated to Jetty
 9.2. However, rj9a tracks most recent Jetty release and offers
 additional features like http/2, http/3 and websocket.
 
-JDK 8 support was dropped in Jetty 10 and above. To use JDK 8 and
-Jetty 9, please use to `0.14.3` of this library.
+## Version Matrix
+
+| rj9a version | Jetty Version | JDK Version | Servlet Version | Supported? |
+| --- | --- | --- | --- | --- |
+| 0.30.x | 12.x | JDK 17 | N/A | true |
+| 0.22.x | 11.x | JDK 11 | jakarta 5.0 | true |
+| 0.17.x | 10.x | JDK 11 | jakarta 4.0  | false |
+| 0.14.x | 9.x | JDK 8 | 3.1 | false |
 
 ## Usage
 
@@ -215,18 +221,8 @@ You can find examples in `examples` folder. To run example:
 * http3 `lein with-profile example-http3 run`
 * websocket: `lein with-profile example-websocket run`
 
-## Contributors
-
-* [kristinarodgers](https://github.com/kristinarodgers)
-* [xtang](https://github.com/xtang)
-* [NoamB](https://github.com/NoamB)
-* [mpenet](https://github.com/mpenet)
-* [aesterline](https://github.com/aesterline)
-* [trptcolin](https://github.com/trptcolin)
-* [paomian](https://github.com/paomian)
-
 ## License
 
-Copyright © 2013-2022 Sun Ning
+Copyright © 2013-2023 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
