@@ -11,13 +11,15 @@
     [org.eclipse.jetty.http2 BufferingFlowControlStrategy FlowControlStrategy$Factory]
     [org.eclipse.jetty.http3.server HTTP3ServerConnector AbstractHTTP3ServerConnectionFactory]))
 
+(defn is-localhost? [addr]
+  (or (= addr "127.0.0.1")
+      (= addr "localhost")))
+
 (defn test-app-maker [& {:keys [server-port server-name remote-addr
                                 uri scheme request-method protocol
                                 headers content-type content-length
                                 body query-string]
                          :or {server-port 50524
-                              server-name "127.0.0.1"
-                              remote-addr "127.0.0.1"
                               uri "/"
                               scheme :http
                               request-method :get
@@ -25,8 +27,12 @@
                          :as expected-req}]
   (fn [req]
     (is (= server-port (:server-port req)))
-    (is (= server-name (:server-name req)))
-    (is (= remote-addr (:remote-addr req)))
+    (if (some? server-name)
+      (is (= server-name (:server-name req)))
+      (is (is-localhost? (:server-name req))))
+    (if (some? remote-addr)
+      (is (= remote-addr (:remote-addr req)))
+      (is (is-localhost? (:remote-addr req))))
     (is (= uri (:uri req)))
     (is (= query-string (:query-string req)))
     (is (= scheme (:scheme req)))
