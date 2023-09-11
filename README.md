@@ -6,7 +6,7 @@
 [![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
 
 Ring adapter for Jetty 12 and 11 (although named as jetty9), with HTTP/2,
-WebSocket and experimental HTTP/3 support.
+WebSocket, experimental HTTP/3 and virtual threads support.
 
 This is a simple and plain wrapper on modern Jetty versions. It
 doesn't introduce additional thread model or anything else (no
@@ -20,12 +20,24 @@ additional features like http/2, http/3 and websocket.
 
 ## Version Matrix
 
-| rj9a version | Jetty Version | JDK Version | Servlet Version | Supported? |
-| --- | --- | --- | --- | --- |
-| 0.30.x | 12.x | JDK 17 | N/A | true |
-| 0.22.x | 11.x | JDK 11 | jakarta 5.0 | true |
-| 0.17.x | 10.x | JDK 11 | jakarta 4.0  | false |
-| 0.14.x | 9.x | JDK 8 | 3.1 | false |
+rj9a works on top of certain components of Java/Clojure ecosystem. To find a
+version works for your stack, check the version matrix below.
+
+| rj9a | Jetty | JDK | Clojure | Servlet API | Ring API | Maintained? |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0.30.x | 12.0.x | 17 | 1.11 | N/A | 1.10 | true |
+| 0.22.x | 11.0.x | 11 | 1.11 | Jakarta 5.0 | 1.10 | true |
+| 0.17.x | 10.0.x | 11 | 1.10 | Jakarta 4.0 | 1.9 | false |
+| 0.14.x | 9.4.x | 8 | 1.10 | 3.1 | 1.8 | false |
+
+The `master` branch will keep tracking Jetty 12 as our default release
+channel. For those users who stick with JDK 11, we will keep maintaining `0.22`
+releases on [branch
+`jetty-11`](https://github.com/sunng87/ring-jetty9-adapter/tree/jetty-11) which
+is based on Jetty 11.
+
+For JDK 8 users, `0.14` releases should be usable but I'm no longer actively
+maintaining it.
 
 ## Usage
 
