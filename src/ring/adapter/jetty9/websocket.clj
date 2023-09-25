@@ -10,17 +10,9 @@
            [java.util Locale]
            [java.time Duration])
   (:require [clojure.string :as string]
+            [ring.websocket :as ring-ws]
             [ring.adapter.jetty9.common :refer [build-request-map
                                                 get-headers set-headers! noop]]))
-
-(defprotocol WebSocketProtocol
-  (send! [this msg] [this msg callback])
-  (ping! [this] [this msg])
-  (close! [this] [this status-code reason])
-  (remote-addr [this])
-  (idle-timeout! [this ms])
-  (connected? [this])
-  (req-of [this]))
 
 (defprotocol WebSocketSend
   (-send! [x ws] [x ws callback] "How to encode content sent to the WebSocket clients"))
@@ -37,7 +29,7 @@
       (write-success))
     (fail [_ throwable]
       (write-failed throwable))))
-
+;;TODO
 (extend-protocol WebSocketSend
   (Class/forName "[B")
   (-send!
@@ -70,7 +62,7 @@
      (-send! ws (str this)))
     ([this ws callback]
      (-send! ws (str this) callback))))
-
+;;TODO
 (extend-protocol WebSocketPing
   (Class/forName "[B")
   (-ping! [ba ws] (-ping! (ByteBuffer/wrap ba) ws))
@@ -90,60 +82,42 @@
            :websocket-subprotocols (into [] (.getSubProtocols request))
            :websocket-extensions (into [] (.getExtensions request)))))
 
-(extend-protocol WebSocketProtocol
+(extend-protocol ring-ws/Socket
   Session
-  (send!
-    ([this msg]
-     (-send! msg this))
-    ([this msg callback]
-     (-send! msg this callback)))
-  (ping!
-    ([this]
-     (-ping! (ByteBuffer/allocate 0) this))
-    ([this msg]
-     (-ping! msg this)))
-  (close!
-    ([this]
-     (.close this))
-    ([this status-code reason]
-     (.close this status-code reason (write-callback {}))))
-  (remote-addr [this]
-    (.getRemoteSocketAddress this))
-  (idle-timeout! [this ms]
-    (.setIdleTimeout this (java.time.Duration/ofMillis ^long ms)))
-  (connected? [this]
-    (.isOpen this))
-  (req-of [this]
-    (build-upgrade-request-map (.getUpgradeRequest this))))
+  (-send [this msg]
+    (-send! msg this))
+  (-send-async [this msg succeed fail]
+    ;;TODO
+    )
+  (-ping [this msg]
+    (-ping! msg this))
+  (-pong [this msg]
+    (-pong! msg this))
+  (-close [this status-code reason]
+    (.close this status-code reason (write-callback {})))
+  (-open? [this]
+    (.isOpen this)))
 
 (defn- proxy-ws-adapter
-  [{:as _
-    :keys [on-connect on-error on-text on-close on-bytes on-ping on-pong]
-    :or {on-connect noop
-         on-error noop
-         on-text noop
-         on-close noop
-         on-bytes noop
-         on-ping noop
-         on-pong noop}}]
+  [listener]
   (let [session (atom nil)]
     (reify Session$Listener$AutoDemanding
       (^void onWebSocketOpen [this ^Session current-session]
-       (on-connect current-session)
+       (ring-ws/on-connect listener current-session)
        ;; save session
        (reset! session current-session))
       (^void onWebSocketError [this ^Throwable e]
-       (on-error @session e))
+       (ring-ws/on-error listener @session e))
       (^void onWebSocketText [this ^String message]
-       (on-text @session message))
+       (ring-ws/on-message listener @session message))
       (^void onWebSocketClose [this ^int status ^String reason]
-       (on-close @session status reason))
+       (ring-ws/on-close listener @session status reason))
       (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
-       (on-bytes @session payload))
+       (ring-ws/on-message listener @session payload))
       (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
-       (on-ping @session bytebuffer))
+       )
       (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
-       (on-pong @session bytebuffer)))))
+       (ring-ws/on-pong listener @session bytebuffer)))))
 
 (defn reify-default-ws-creator
   [ws-fns]
@@ -174,17 +148,16 @@
   [^Request req
    ^Response resp
    ^Callback cb
-   ws
+   ws-resp
    {:as _options
     :keys [ws-max-idle-time
            ws-max-text-message-size]
     :or {ws-max-idle-time 500000
          ws-max-text-message-size 65536}}]
-  {:pre [(or (map? ws) (fn? ws))]}
+  {:pre [(map? ws)]}
   (let [container (ServerWebSocketContainer/get (.getContext req))
-        creator (if (map? ws)
-                  (reify-default-ws-creator ws)
-                  (reify-custom-ws-creator ws))]
+        websocket-resp (:ring.websocket/listener ws-resp)
+        creator (reify-default-ws-creator ws)]
     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
     (.setMaxTextMessageSize container ws-max-text-message-size)
     (.upgrade container creator req resp cb)))
