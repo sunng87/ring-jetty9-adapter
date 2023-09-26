@@ -14,67 +14,13 @@
             [ring.adapter.jetty9.common :refer [build-request-map
                                                 get-headers set-headers! noop]]))
 
-(defprotocol WebSocketSend
-  (-send! [x ws] [x ws callback] "How to encode content sent to the WebSocket clients"))
-
-(defprotocol WebSocketPing
-  (-ping! [x ws] "How to encode bytes sent with a ping"))
-
 (defn- write-callback
-  [{:keys [write-failed write-success]
-    :or   {write-failed  noop
-           write-success noop}}]
+  [write-success write-failed]
   (reify Callback
     (succeed [_]
       (write-success))
     (fail [_ throwable]
       (write-failed throwable))))
-;;TODO
-(extend-protocol WebSocketSend
-  (Class/forName "[B")
-  (-send!
-    ([ba ws]
-     (-send! (ByteBuffer/wrap ba) ws))
-    ([ba ws callback]
-     (-send! (ByteBuffer/wrap ba) ws callback)))
-
-  ByteBuffer
-  (-send!
-    ([bb ws]
-     (.sendBinary ^Session ws ^ByteBuffer bb ^Callback (write-callback {})))
-    ([bb ws callback]
-     (.sendBinary ^Session ws ^ByteBuffer bb ^Callback (write-callback callback))))
-
-  String
-  (-send!
-    ([s ws]
-     (.sendText ^Session ws ^String s ^Callback (write-callback {})))
-    ([s ws callback]
-     (.sendText ^Session ws ^String s ^Callback (write-callback callback))))
-
-  IFn
-  (-send! [f ws]
-    (f ws))
-
-  Object
-  (-send!
-    ([this ws]
-     (-send! ws (str this)))
-    ([this ws callback]
-     (-send! ws (str this) callback))))
-;;TODO
-(extend-protocol WebSocketPing
-  (Class/forName "[B")
-  (-ping! [ba ws] (-ping! (ByteBuffer/wrap ba) ws))
-
-  ByteBuffer
-  (-ping! [bb ws] (.sendPing ^Session ws ^ByteBuffer bb ^Callback (write-callback {})))
-
-  String
-  (-ping! [s ws] (-ping! (.getBytes ^String s) ws))
-
-  Object
-  (-ping! [o ws] (-ping! (str o) ws)))
 
 (defn build-upgrade-request-map [^ServerUpgradeRequest request]
   (let [base-request-map (build-request-map request)]
@@ -85,14 +31,17 @@
 (extend-protocol ring-ws/Socket
   Session
   (-send [this msg]
-    (-send! msg this))
+    (cond
+      (string? msg) (.sendText this msg (write-callback noop noop))
+      (instance? ByteBuffer msg) (.sendBinary this msg (write-callback noop noop))))
   (-send-async [this msg succeed fail]
-    ;;TODO
-    )
+    (cond
+      (string? msg) (.sendText this msg (write-callback succeed fail))
+      (instance? ByteBuffer msg) (.sendBinary this msg (write-callback succeed fail))))
   (-ping [this msg]
-    (-ping! msg this))
+    (.sendPing this msg (write-callback noop noop)))
   (-pong [this msg]
-    (-pong! msg this))
+    (.sendPong this msg (write-callback noop noop)))
   (-close [this status-code reason]
     (.close this status-code reason (write-callback {})))
   (-open? [this]
