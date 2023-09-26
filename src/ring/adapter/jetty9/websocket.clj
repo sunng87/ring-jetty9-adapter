@@ -52,7 +52,7 @@
   (let [session (atom nil)]
     (reify Session$Listener$AutoDemanding
       (^void onWebSocketOpen [this ^Session current-session]
-       (ring-ws/on-connect listener current-session)
+       (ring-ws/on-open listener current-session)
        ;; save session
        (reset! session current-session))
       (^void onWebSocketError [this ^Throwable e]
@@ -103,10 +103,10 @@
            ws-max-text-message-size]
     :or {ws-max-idle-time 500000
          ws-max-text-message-size 65536}}]
-  {:pre [(map? ws)]}
+  {:pre [(map? ws-resp)]}
   (let [container (ServerWebSocketContainer/get (.getContext req))
-        websocket-resp (:ring.websocket/listener ws-resp)
-        creator (reify-default-ws-creator ws)]
+        websocket-listeners (:ring.websocket/listener ws-resp)
+        creator (reify-default-ws-creator websocket-listeners)]
     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
     (.setMaxTextMessageSize container ws-max-text-message-size)
     (.upgrade container creator req resp cb)))
