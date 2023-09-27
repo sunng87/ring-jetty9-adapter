@@ -32,8 +32,8 @@
         (common/build-request-map request)
         (fn [response-map]
           (let [response-map (common/normalize-response response-map)]
-            (if-let [ws (common/websocket-upgrade-response? response-map)]
-              (ws/upgrade-websocket request response callback ws)
+            (if (common/websocket-upgrade-response? response-map)
+              (ws/upgrade-websocket request response callback response-map)
               (common/update-response request response response-map)))
           (.succeeded callback))
         (fn [^Throwable exception]

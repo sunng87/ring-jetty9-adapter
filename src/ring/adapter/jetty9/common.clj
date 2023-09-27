@@ -36,11 +36,8 @@
     response))
 
 (defn websocket-upgrade-response?
-  [{:keys [^long status ws]}]
-  ;; NOTE: we know that when :ws attr is provided in the response, we
-  ;; need to upgrade to websockets protocol.
-  (and status (== 101 status) ws))
-
+  [resp]
+  (contains? resp :ring.websocket/listener))
 
 (defn get-charset [^Request request]
   (when-let [content-type (.. request getHeaders (get HttpHeader/CONTENT_TYPE))]

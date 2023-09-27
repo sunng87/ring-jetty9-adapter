@@ -22,6 +22,7 @@
     (fail [_ throwable]
       (write-failed throwable))))
 
+;; TODO: get websocket headers
 (defn build-upgrade-request-map [^ServerUpgradeRequest request]
   (let [base-request-map (build-request-map request)]
     (assoc base-request-map
@@ -68,30 +69,20 @@
       (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
        (ring-ws/on-pong listener @session bytebuffer)))))
 
-(defn reify-default-ws-creator
-  [ws-fns]
-  (reify WebSocketCreator
-    (createWebSocket [this _ _ _]
-      (proxy-ws-adapter ws-fns))))
-
-(defn reify-custom-ws-creator
-  [ws-creator-fn]
+(defn reify-ws-creator
+  [resp-map]
   (reify WebSocketCreator
     (createWebSocket [this req resp cb]
-      (let [req-map (build-upgrade-request-map req)
-            ws-results (ws-creator-fn req-map)]
-        (if-let [{:keys [code message headers]} (:error ws-results)]
-          (do (set-headers! resp headers)
-              (Response/writeError resp cb ^int code ^String message cb))
-          (do
-            (when-let [sp (:subprotocol ws-results)]
-              (.setAcceptedSubProtocol resp sp))
-            (when-let [exts (not-empty (:extensions ws-results))]
-              (.setExtensions resp (mapv #(if (string? %)
-                                            (JettyExtensionConfig. ^String %)
-                                            %)
-                                         exts)))
-            (proxy-ws-adapter ws-results)))))))
+      (let [listener (:ring.websocket/listener resp-map)
+            protocol (:ring.websocket/protocol resp-map)]
+        (when (some? protocol)
+          (.setAcceptedSubProtocol resp protocol))
+        #_(when-let [exts (not-empty (:extensions ws-results))]
+          (.setExtensions resp (mapv #(if (string? %)
+                                        (JettyExtensionConfig. ^String %)
+                                        %)
+                                     exts)))
+        (proxy-ws-adapter listener)))))
 
 (defn upgrade-websocket
   [^Request req
@@ -105,8 +96,7 @@
          ws-max-text-message-size 65536}}]
   {:pre [(map? ws-resp)]}
   (let [container (ServerWebSocketContainer/get (.getContext req))
-        websocket-listeners (:ring.websocket/listener ws-resp)
-        creator (reify-default-ws-creator websocket-listeners)]
+        creator (reify-ws-creator ws-resp)]
     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
     (.setMaxTextMessageSize container ws-max-text-message-size)
     (.upgrade container creator req resp cb)))
@@ -125,29 +115,6 @@
          connection
          (string/includes? (string/lower-case upgrade) "websocket")
          (string/includes? (string/lower-case connection) "upgrade"))))
-
-(defn ws-upgrade-response
-  "Returns a websocket upgrade response.
-
-   ws-handler must be a map of handler fns:
-   {:on-connect #(create-fn %)               ; ^WebSocketAdapter ws
-    :on-text   #(text-fn % %2)               ; ^WebSocketAdapter ws message
-    :on-bytes  #(binary-fn % %2 %3 %4)       ; ^WebSocketAdapter ws payload offset len
-    :on-close  #(close-fn % %2 %3)           ; ^WebSocketAdapter ws statusCode reason
-    :on-error  #(error-fn % %2)}             ; ^WebSocketAdapter ws e
-   or a custom creator function take upgrade request as parameter and returns a handler fns map,
-   negotiated subprotocol and extensions (or error info).
-
-   The response contains HTTP status 101 (Switching Protocols)
-   and the following headers:
-   - connection: upgrade
-   - upgrade: websocket
-   "
-  [ws-handler]
-  {:status 101 ;; http 101 switching protocols
-   :headers {"upgrade" "websocket"
-             "connection" "upgrade"}
-   :ws ws-handler})
 
 (defn ensure-container [^Server server ^ContextHandler context-handler]
   (ServerWebSocketContainer/ensure server context-handler))

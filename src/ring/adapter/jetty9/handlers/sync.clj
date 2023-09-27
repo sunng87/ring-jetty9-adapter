@@ -29,8 +29,8 @@
                            common/build-request-map
                            handler
                            common/normalize-response)]
-      (if-let [ws (common/websocket-upgrade-response? response-map)]
-        (ws/upgrade-websocket request response callback ws options)
+      (if (common/websocket-upgrade-response? response-map)
+        (ws/upgrade-websocket request response callback response-map options)
         (do
           (common/update-response request response response-map)
           (.succeeded callback)
