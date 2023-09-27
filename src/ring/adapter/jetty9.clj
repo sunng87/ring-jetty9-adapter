@@ -25,15 +25,7 @@
     [ring.adapter.jetty9.common :as common]
     [ring.adapter.jetty9.websocket :as ws]))
 
-(def send! ws/send!)
-(def ping! ws/ping!)
-(def close! ws/close!)
-(def remote-addr ws/remote-addr)
-(def idle-timeout! ws/idle-timeout!)
-(def connected? ws/connected?)
-(def req-of ws/req-of)
 (def ws-upgrade-request? ws/ws-upgrade-request?)
-(def ws-upgrade-response ws/ws-upgrade-response)
 
 (defn ^:internal proxy-handler
   "Returns a Jetty Handler implementation for the given Ring handler."
