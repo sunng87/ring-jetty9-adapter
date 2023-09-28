@@ -1,6 +1,7 @@
 (ns ring.adapter.jetty9-test
   (:require [clojure.test :refer :all]
             [ring.adapter.jetty9 :as jetty9]
+            [ring.websocket :as ringws]
             [clj-http.client :as client]
             [less.awful.ssl :as less-ssl]
             #_[gniazdo.core :as ws])
@@ -48,12 +49,13 @@
   {:status 200 :body "yes"})
 
 (def websocket-handler
-  {:on-connect (fn [ws])
-   :on-close   (fn [ws status reason])
-   :on-error   (fn [ws e])
-   :on-text    (fn [ws msg]
-                 (jetty9/send! ws msg))
-   :on-byte    (fn [ws bytes offset length])})
+  (reify ringws/Listener
+    (on-open [this socket])
+    (on-close [this socket status reason])
+    (on-error [this socket error])
+    (on-message [this socket msg]
+      (ringws/-send socket msg))))
+
 (defmacro with-jetty
   [[sym [handler opts]] & body]
   `(let [~sym (->> (assoc ~opts :lifecycle-start (partial println "JETTY START")
@@ -84,6 +86,19 @@
       (is (= 200 (:status resp)))
       (is (= "yes" (:body resp))))))
 
+#_(deftest jetty9-websocket-test
+  (with-jetty [server [(fn [req]
+                         {:ring.websocket/listener websocket-handler})
+                       {:port 50524 :join? false}]]
+    (is server)
+    (let [resp (client/get "http://localhost:50524/"
+                            {:headers {"Connection" "Upgrade"
+                                       "Upgrade" "websocket"
+                                       "Sec-WebSocket-Version" "13"
+                                       "Sec-WebSocket-Extensions" "permessage-deflate; client_max_window_bits"
+                                       "Sec-WebSocket-Key" "ZxKJ7pcanojJTxHexoMmrA=="}})]
+      (is (= 101 (:status resp))))))
+
 (deftest var-handler
   (with-jetty [server [#'dummy-app {:port 50524
                                     :join? false}]]
@@ -102,7 +117,6 @@
                                   :http?           false
                                   :ssl             true
                                   :join?           false
-                                  :websockets      {"/path" websocket-handler}
                                   :keystore        "dev-resources/test/my-keystore.jks"
                                   :key-password    "password"
                                   :keystore-type   "PKCS12"

@@ -22,13 +22,6 @@
     (fail [_ throwable]
       (write-failed throwable))))
 
-;; TODO: get websocket headers
-(defn build-upgrade-request-map [^ServerUpgradeRequest request]
-  (let [base-request-map (build-request-map request)]
-    (assoc base-request-map
-           :websocket-subprotocols (into [] (.getSubProtocols request))
-           :websocket-extensions (into [] (.getExtensions request)))))
-
 (extend-protocol ring-ws/Socket
   Session
   (-send [this msg]
