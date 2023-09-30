@@ -10,7 +10,7 @@
                                 (on-open [this socket] (tap> [:ws :connect]))
                                 (on-message [this socket message]
                                   (tap> [:ws :msg message])
-                                  (ringws/-send socket (str "echo: " message)))
+                                  (ringws/send socket (str "echo: " message)))
                                 (on-close [this socket status-code reason]
                                   (tap> [:ws :close status-code reason]))
                                 (on-pong [this socket data]
