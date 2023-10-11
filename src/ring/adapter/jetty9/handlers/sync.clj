@@ -23,7 +23,6 @@
    ^Request request
    ^Response response
    ^Callback callback]
-  (common/ensure-response-buffer-size! request)
   (try
     (let [[handler options] (.state this)
           response-map (-> request
@@ -33,7 +32,7 @@
       (if-let [ws (common/websocket-upgrade-response? response-map)]
         (ws/upgrade-websocket request response callback ws options)
         (do
-          (common/update-response response response-map)
+          (common/update-response request response response-map)
           (.succeeded callback)
           true)))
     (catch Throwable e
