@@ -35,11 +35,6 @@
 (def ws-upgrade-request? ws/ws-upgrade-request?)
 (def ws-upgrade-response ws/ws-upgrade-response)
 
-(defn ^:internal wrap-buffered-handler
-  "Wrap handler into Jetty's BufferedHandler so it's possible to compute content-length"
-  [handler]
-  (BufferedResponseHandler. handler))
-
 (defn ^:internal proxy-handler
   "Returns a Jetty Handler implementation for the given Ring handler."
   [handler options]
@@ -53,19 +48,21 @@
 (defn- http-config
   "Creates jetty http configurator"
   [{:as _
-    :keys [ssl-port secure-scheme output-buffer-size request-header-size
-           response-header-size send-server-version? send-date-header?
-           header-cache-size sni-required? sni-host-check?]
+    :keys [ssl-port secure-scheme output-buffer-size output-aggregation-size
+           request-header-size response-header-size send-server-version? send-date-header?
+           header-cache-size sni-required? sni-host-check? idle-timeout-ms]
     :or {ssl-port 443
          secure-scheme "https"
          output-buffer-size 32768
+         output-aggregation-size 8192
          request-header-size 8192
          response-header-size 8192
          send-server-version? true
          send-date-header? false
-         header-cache-size 512
+         header-cache-size 1024
          sni-required? false
-         sni-host-check? true}}]
+         sni-host-check? true
+         idle-timeout-ms -1}}]
   (let [secure-customizer (doto (SecureRequestCustomizer.)
                             (.setSniRequired sni-required?)
                             (.setSniHostCheck sni-host-check?))]
@@ -73,11 +70,13 @@
       (.setSecureScheme secure-scheme)
       (.setSecurePort ssl-port)
       (.setOutputBufferSize output-buffer-size)
+      (.setOutputAggregationSize output-aggregation-size)
       (.setRequestHeaderSize request-header-size)
       (.setResponseHeaderSize response-header-size)
       (.setSendServerVersion send-server-version?)
       (.setSendDateHeader send-date-header?)
       (.setHeaderCacheSize header-cache-size)
+      (.setIdleTimeout idle-timeout-ms)
       (.addCustomizer secure-customizer))))
 
 (defn- ^SslContextFactory$Server ssl-context-factory
@@ -338,10 +337,9 @@
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         context-handler (ContextHandler. "/")
-        ring-app-handler (wrap-buffered-handler
-                          (if async?
-                            (proxy-async-handler handler options)
-                            (proxy-handler handler options)))]
+        ring-app-handler(if async?
+                          (proxy-async-handler handler options)
+                          (proxy-handler handler options))]
     (.setHandler context-handler ^Handler ring-app-handler)
     (.setHandler s ^Handler context-handler)
     (ws/ensure-container s context-handler)

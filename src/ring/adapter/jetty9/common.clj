@@ -77,7 +77,7 @@
 
 (defn update-response
   "Update Jetty Response from given Ring response map"
-  [^Response response response-map]
+  [^Request request ^Response response response-map]
   (let [{:keys [status headers body]} response-map]
     (cond
       (nil? response)     (throw (NullPointerException. "Response is nil"))
@@ -87,8 +87,5 @@
         (some->> status (.setStatus response))
         (set-headers! response headers)
         (->>
-          (Content$Sink/asOutputStream response)
+          (Response/asBufferedOutputStream request response)
           (protocols/write-body-to-stream body response-map))))))
-
-(defn ensure-response-buffer-size! [^Request request]
-  (.setAttribute request BufferedResponseHandler/BUFFER_SIZE_ATTRIBUTE_NAME 16384))

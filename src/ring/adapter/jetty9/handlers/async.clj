@@ -23,7 +23,6 @@
    ^Request request
    ^Response response
    ^Callback callback]
-  (common/ensure-response-buffer-size! request)
   (try
     (let [[handler options] (.state this)
           ;;TODO: async timeout
@@ -35,7 +34,7 @@
           (let [response-map (common/normalize-response response-map)]
             (if-let [ws (common/websocket-upgrade-response? response-map)]
               (ws/upgrade-websocket request response callback ws)
-              (common/update-response response response-map)))
+              (common/update-response request response response-map)))
           (.succeeded callback))
         (fn [^Throwable exception]
           (Response/writeError request response callback exception)
