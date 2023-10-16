@@ -50,7 +50,7 @@
   [{:as _
     :keys [ssl-port secure-scheme output-buffer-size output-aggregation-size
            request-header-size response-header-size send-server-version? send-date-header?
-           header-cache-size sni-required? sni-host-check? idle-timeout-ms]
+           header-cache-size sni-required? sni-host-check?]
     :or {ssl-port 443
          secure-scheme "https"
          output-buffer-size 32768
@@ -61,8 +61,7 @@
          send-date-header? false
          header-cache-size 1024
          sni-required? false
-         sni-host-check? true
-         idle-timeout-ms -1}}]
+         sni-host-check? true}}]
   (let [secure-customizer (doto (SecureRequestCustomizer.)
                             (.setSniRequired sni-required?)
                             (.setSniHostCheck sni-host-check?))]
@@ -76,7 +75,8 @@
       (.setSendServerVersion send-server-version?)
       (.setSendDateHeader send-date-header?)
       (.setHeaderCacheSize header-cache-size)
-      (.setIdleTimeout idle-timeout-ms)
+      ;; duplicated with http configuration :max-idle-time
+      #_(.setIdleTimeout idle-timeout-ms)
       (.addCustomizer secure-customizer))))
 
 (defn- ^SslContextFactory$Server ssl-context-factory
@@ -312,6 +312,8 @@
   :job-queue - the job queue to be used by the Jetty threadpool (default is unbounded), ignored if `:thread-pool` provided
   :virtual-threads? - to enable virtual threads for thread pool, ignored if `:thread-pool` provided
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
+  :output-buffer-size - size of http response buffer, default to 32768
+  :output-aggregation-size - size of http aggregation size, defualt to 8192
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
   :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
