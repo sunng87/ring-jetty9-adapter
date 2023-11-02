@@ -1,7 +1,7 @@
 (ns rj9a.websocket
   (:gen-class)
   (:require [ring.adapter.jetty9 :as jetty]
-            [ring.websocket :as ringws]))
+            [ring.websocket.protocols :as ringws]))
 
 (defn my-websocket-handler [upgrade-request]
   (let [provided-subprotocols (:websocket-subprotocols upgrade-request)
