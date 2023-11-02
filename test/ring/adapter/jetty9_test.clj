@@ -1,7 +1,7 @@
 (ns ring.adapter.jetty9-test
   (:require [clojure.test :refer :all]
             [ring.adapter.jetty9 :as jetty9]
-            [ring.websocket :as ringws]
+            [ring.websocket.protocols :as ringws]
             [clj-http.client :as client]
             [less.awful.ssl :as less-ssl]
             #_[gniazdo.core :as ws])

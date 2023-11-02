@@ -10,7 +10,7 @@
            [java.util Locale]
            [java.time Duration])
   (:require [clojure.string :as string]
-            [ring.websocket :as ring-ws]
+            [ring.websocket.protocols :as ring-ws]
             [ring.adapter.jetty9.common :refer [build-request-map
                                                 get-headers set-headers! noop]]))
 
