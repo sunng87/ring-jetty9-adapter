@@ -3,7 +3,7 @@
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes MimeTypes$Type]
            [org.eclipse.jetty.server.handler BufferedResponseHandler]
            [org.eclipse.jetty.server Request Response SecureRequestCustomizer]
-           [org.eclipse.jetty.io Content$Sink]
+           [org.eclipse.jetty.io Content$Sink EndPoint$SslSessionData]
            [org.eclipse.jetty.http ImmutableHttpFields HttpFields$Mutable HttpURI]
            [java.util Locale]))
 
@@ -50,7 +50,8 @@
         (MimeTypes/getCharsetFromContentType content-type))))
 
 (defn- get-client-cert [^Request request]
-  (.getAttribute request SecureRequestCustomizer/PEER_CERTIFICATES_ATTRIBUTE))
+  (when-let [session-data (.getAttribute request EndPoint$SslSessionData/ATTRIBUTE)]
+    (.peerCertificates ^EndPoint$SslSessionData session-data)))
 
 (defn build-request-map
   "Create the request map from the Request object."
