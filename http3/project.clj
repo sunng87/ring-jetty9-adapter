@@ -1,4 +1,4 @@
-(def jetty-version "12.0.3")
+(def jetty-version "12.0.4")
 
 (defproject info.sunng/ring-jetty9-adapter-http3 "0.4.2"
   :description "Ring adapter for jetty 9 and above, meta package for http3"
