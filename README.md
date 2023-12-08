@@ -238,3 +238,10 @@ You can find examples in `examples` folder. To run example:
 Copyright © 2013-2023 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
+
+## Sponsors
+
+This project is sponsored by:
+
+- [TOYOKUMO](https://github.com/toyokumo) sponsored this project in [Thanks OSS
+  Award](https://oss.toyokumo.co.jp/) program.
