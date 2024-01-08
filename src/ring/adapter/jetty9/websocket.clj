@@ -22,24 +22,26 @@
     (fail [_ throwable]
       (write-failed throwable))))
 
-(extend-protocol ring-ws/Socket
-  Session
+(extend-type Session
+  ring-ws/Socket
   (-send [this msg]
-    (cond
-      (string? msg) (.sendText this msg (write-callback noop noop))
-      (instance? ByteBuffer msg) (.sendBinary this msg (write-callback noop noop))))
-  (-send-async [this msg succeed fail]
-    (cond
-      (string? msg) (.sendText this msg (write-callback succeed fail))
-      (instance? ByteBuffer msg) (.sendBinary this msg (write-callback succeed fail))))
+    (if (instance? CharSequence msg)
+      (.sendText this msg (write-callback noop noop))
+      (.sendBinary this msg (write-callback noop noop))))
   (-ping [this msg]
     (.sendPing this msg (write-callback noop noop)))
   (-pong [this msg]
     (.sendPong this msg (write-callback noop noop)))
   (-close [this status-code reason]
-    (.close this status-code reason (write-callback {})))
+    (.close this status-code reason (write-callback noop noop)))
   (-open? [this]
-    (.isOpen this)))
+    (.isOpen this))
+
+  ring-ws/AsyncSocket
+  (-send-async [this msg succeed fail]
+    (if (instance? CharSequence msg)
+      (.sendText this msg (write-callback succeed fail))
+      (.sendBinary this msg (write-callback succeed fail)))))
 
 (defn- proxy-ws-adapter
   [listener]

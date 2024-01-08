@@ -1,23 +1,23 @@
 (ns rj9a.websocket
   (:gen-class)
   (:require [ring.adapter.jetty9 :as jetty]
-            [ring.websocket.protocols :as ringws]))
+            [ring.websocket :as ringws]))
 
 (defn my-websocket-handler [upgrade-request]
   (let [provided-subprotocols (:websocket-subprotocols upgrade-request)
         provided-extensions (:websocket-extensions upgrade-request)]
-    {:ring.websocket/listener (reify ringws/Listener
-                                (on-open [this socket] (tap> [:ws :connect]))
-                                (on-message [this socket message]
-                                  (tap> [:ws :msg message])
-                                  (ringws/send socket (str "echo: " message)))
-                                (on-close [this socket status-code reason]
-                                  (tap> [:ws :close status-code reason]))
-                                (on-pong [this socket data]
-                                  (tap> [:ws :pong]))
-                                (on-error [this socket error]
-                                  (.printStackTrace error)
-                                  (tap> [:ws :error error])))
+    {:ring.websocket/listener {:on-open (fn [socket]
+                                          (tap> [:ws :connect]))
+                               :on-message (fn [socket message]
+                                             (tap> [:ws :msg message])
+                                             (ringws/send socket (str "echo: " message)))
+                               :on-close (fn [socket status-code reason]
+                                           (tap> [:ws :close status-code reason]))
+                               :on-pong (fn [socket data]
+                                          (tap> [:ws :pong]))
+                               :on-error (fn [socket error]
+                                           (.printStackTrace error)
+                                           (tap> [:ws :error error]))}
      :ring.websocket/protocol (first provided-subprotocols)}))
 
 (defn handler [req]
