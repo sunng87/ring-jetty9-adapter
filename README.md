@@ -143,44 +143,30 @@ An example is available in `examples` folder.
 
 ### WebSocket
 
-You can define following handlers for websocket events.
+From Ring 1.11, Websocket API has been standardized. A valid websocket handler
+can be defined as a map of listener functions:
 
 ```clojure
-(def ws-handler {:on-connect (fn [ws])
+(def ws-handler {:on-open (fn [ws])
                  :on-error (fn [ws e])
                  :on-close (fn [ws status-code reason])
-                 :on-text (fn [ws text-message])
-                 :on-bytes (fn [ws bytes offset len])
+                 :on-message (fn [ws message])
                  :on-ping (fn [ws bytebuffer])
                  :on-pong (fn [ws bytebuffer])})
 ```
 
-WebSocketProtocol allows you to read and write data on the `ws` value:
+Functions are provided in `ring.websocket` to read and write data on the `ws`
+value:
 
-* (send! ws msg)
-* (send! ws msg callback)
-* (ping! ws)
-* (ping! ws msg)
-* (close! ws)
-* (remote-addr ws)
-* (idle-timeout! ws timeout)
+* (ring.websocket/send ws msg)
+* (ring.websocket/send ws msg succeed-callback fail-callback)
+* (ring.websocket/ping ws msg)
+* (ring.websocket/close ws)
 
 Notice that we support different type of msg:
 
-* **byte[]** and **ByteBuffer**: send binary websocket message
-* **String** and other Object: send text websocket message
-* **(fn [ws])** (clojure function): Custom function you can operate on
-  Jetty's
-  [RemoteEndpoint](http://download.eclipse.org/jetty/stable-9/apidocs/org/eclipse/jetty/websocket/api/RemoteEndpoint.html)
-
-A callback can also be specified for `send!`:
-
-```clojure
-(send! ws msg {:write-failed (fn [throwable]) :write-success (fn [])})
-```
-
-A callback is a map where keys `:write-failed` and `:write-success`
-are optional.
+* **String**: send text websocket message
+* **ByteBuffer**: send binary websocket message
 
 In your ring app, detect a websocket handshake request and upgrade it
 with a websocket handler.
@@ -215,8 +201,7 @@ a redirect from Jetty), you can start the server like:
 Sometimes you may have a negotiation with the websocket client on the
 handshake (upgrade request) phase. You can define a ring like function
 that returns the websocket handler, or raises an error. You may also
-select a subprotocol from `(:websocket-subprotocol upgrade-request)` and
-configure available `(:websocket-extensions upgrade-request)` via the
+select a subprotocol from `(:websocket-subprotocol upgrade-request)` via the
 websocket handler creator function. See [websocket
 example](https://github.com/sunng87/ring-jetty9-adapter/blob/master/examples/rj9a/websocket.clj)
 for detail.
