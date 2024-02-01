@@ -1,4 +1,4 @@
-(def jetty-version "12.0.5")
+(def jetty-version "12.0.6")
 
 (defproject info.sunng/ring-jetty9-adapter "0.31.1-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -8,7 +8,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ring/ring-core "1.11.0" :exclusions [commons-io]]
                  [org.ring-clojure/ring-websocket-protocols "1.11.0"]
-                 [info.sunng/ring-jetty9-adapter-http3 "0.4.4" :optional true]
+                 [info.sunng/ring-jetty9-adapter-http3 "0.4.5" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty/jetty-util ~jetty-version]
                  [org.eclipse.jetty.websocket/jetty-websocket-jetty-api ~jetty-version]
