@@ -2,7 +2,8 @@
   (:require
     [ring.adapter.jetty9.common :as common]
     [ring.adapter.jetty9.servlet :as servlet]
-    [ring.adapter.jetty9.websocket :as ws])
+    [ring.adapter.jetty9.websocket :as ws]
+    [clojure.tools.logging :as log])
   (:import [jakarta.servlet.http HttpServletRequest HttpServletResponse]
            [org.eclipse.jetty.server Request])
   (:gen-class
@@ -35,6 +36,7 @@
         (ws/upgrade-websocket request response ws options)
         (servlet/update-servlet-response response response-map)))
     (catch Throwable e
+      (log/debug e)
       (.sendError response 500 (.getMessage e)))
     (finally
       (.setHandled base-request true))))
