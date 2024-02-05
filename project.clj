@@ -14,7 +14,8 @@
                  [org.eclipse.jetty.websocket/websocket-servlet ~jetty-version]
                  [org.eclipse.jetty.http2/http2-server ~jetty-version]
                  [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
-                 [org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]
+                 [org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]
+                 [org.clojure/tools.logging "1.2.3"]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
