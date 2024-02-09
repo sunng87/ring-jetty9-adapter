@@ -306,6 +306,7 @@
   :max-idle-time  - the maximum idle time in milliseconds for a connection (default 200000)
   :output-buffer-size - size of http response buffer, default to 32768
   :output-aggregation-size - size of http aggregation size, defualt to 8192
+  :ws-configurator - a function called with the websocket container instance (allows for configuration beyond the supported options listed below)
   :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
   :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
