@@ -87,14 +87,17 @@
    ws-resp
    {:as _options
     :keys [ws-max-idle-time
-           ws-max-text-message-size]
+           ws-max-text-message-size
+           ws-configurator]
     :or {ws-max-idle-time 500000
-         ws-max-text-message-size 65536}}]
+         ws-max-text-message-size 65536
+         ws-configurator (constantly nil)}}]
   {:pre [(map? ws-resp)]}
   (let [container (ServerWebSocketContainer/get (.getContext req))
         creator (reify-ws-creator ws-resp)]
     (.setIdleTimeout container (Duration/ofMillis ws-max-idle-time))
     (.setMaxTextMessageSize container ws-max-text-message-size)
+    (ws-configurator container)
     (.upgrade container creator req resp cb)))
 
 (defn ws-upgrade-request?
