@@ -307,8 +307,10 @@
   :output-buffer-size - size of http response buffer, default to 32768
   :output-aggregation-size - size of http aggregation size, defualt to 8192
   :ws-configurator - a function called with the websocket container instance (allows for configuration beyond the supported options listed below)
-  :ws-max-idle-time  - the maximum idle time in milliseconds for a websocket connection (default 500000)
-  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536)
+  :ws-max-idle-time - the maximum idle time in milliseconds for a websocket connection (default 30000, inherited from jetty defaults)
+  :ws-max-frame-size - the maximum message size in bytes for a websocket connection (default 65536, inherited from jetty defaults)
+  :ws-max-binary-message-size - the maximum binary message size in bytes for a websocket connection (default 65536, inherited from jetty defaults)
+  :ws-max-text-message-size  - the maximum text message size in bytes for a websocket connection (default 65536, inherited from jetty defaults)
   :client-auth - SSL client certificate authenticate, may be set to :need, :want or :none (defaults to :none)
   :h2? - enable http2 protocol on secure socket port
   :h2c? - enable http2 clear text on plain socket port
