@@ -25,7 +25,7 @@ version works for your stack, check the version matrix below.
 
 | rj9a | Jetty | JDK | Clojure | Servlet API | Ring API | Maintained? |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0.31.x | 12.0.x | 17 | 1.11 | N/A | 1.11 | true |
+| HEAD | 12.0.x | 17 | 1.11 | N/A | 1.11 | true |
 | 0.30.x | 12.0.x | 17 | 1.11 | N/A | 1.10 | false |
 | 0.22.x | 11.0.x | 11 | 1.11 | Jakarta 5.0 | 1.10 | true |
 | 0.17.x | 10.0.x | 11 | 1.10 | Jakarta 4.0 | 1.9 | false |
