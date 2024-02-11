@@ -1,17 +1,17 @@
 (ns ring.adapter.jetty9.handlers.sync
   (:require
-    [ring.adapter.jetty9.common :as common]
-    [ring.adapter.jetty9.websocket :as ws])
+   [ring.adapter.jetty9.common :as common]
+   [ring.adapter.jetty9.websocket :as ws])
   (:import [org.eclipse.jetty.server Request Response]
            [org.eclipse.jetty.util Callback])
   (:gen-class
-    :name ring.adapter.jetty9.handlers.SyncProxyHandler
-    :extends org.eclipse.jetty.server.Handler$Abstract
-    :state state
-    :init init
-    :constructors {[clojure.lang.IFn
-                    clojure.lang.IPersistentMap] []}
-    :prefix "-"))
+   :name ring.adapter.jetty9.handlers.SyncProxyHandler
+   :extends org.eclipse.jetty.server.Handler$Abstract
+   :state state
+   :init init
+   :constructors {[clojure.lang.IFn
+                   clojure.lang.IPersistentMap] []}
+   :prefix "-"))
 
 (defn -init
   [ring-handler opts]
@@ -33,7 +33,9 @@
         (ws/upgrade-websocket request response callback response-map options)
         (do
           (common/update-response request response response-map)
-          (.succeeded callback)
+          (when-not (satisfies? ring.core.protocols/StreamableResponseBody
+                                (:body response-map))
+            (.succeeded callback))
           true)))
     (catch Throwable e
       (Response/writeError request response callback e)
