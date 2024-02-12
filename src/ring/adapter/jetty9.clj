@@ -21,9 +21,9 @@
            [java.security KeyStore]
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
-    [clojure.string :as string]
-    [ring.adapter.jetty9.common :as common]
-    [ring.adapter.jetty9.websocket :as ws]))
+   [clojure.string :as string]
+   [ring.adapter.jetty9.common :as common]
+   [ring.adapter.jetty9.websocket :as ws]))
 
 (def ws-upgrade-request? ws/ws-upgrade-request?)
 
@@ -334,9 +334,9 @@
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         context-handler (ContextHandler. "/")
-        ring-app-handler(if async?
-                          (proxy-async-handler handler options)
-                          (proxy-handler handler options))]
+        ring-app-handler (if async?
+                           (proxy-async-handler handler options)
+                           (proxy-handler handler options))]
     (.setHandler context-handler ^Handler ring-app-handler)
     (.setHandler s ^Handler context-handler)
     (ws/ensure-container s context-handler)

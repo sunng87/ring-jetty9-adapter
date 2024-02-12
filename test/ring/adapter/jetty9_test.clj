@@ -6,11 +6,11 @@
             [less.awful.ssl :as less-ssl]
             #_[gniazdo.core :as ws])
   (:import
-    [org.eclipse.jetty.http2.server AbstractHTTP2ServerConnectionFactory]
-    [org.eclipse.jetty.http2.frames Frame SettingsFrame]
-    [org.eclipse.jetty.http2 WindowRateControl$Factory]
-    [org.eclipse.jetty.http2 BufferingFlowControlStrategy FlowControlStrategy$Factory]
-    [org.eclipse.jetty.http3.server HTTP3ServerConnector AbstractHTTP3ServerConnectionFactory]))
+   [org.eclipse.jetty.http2.server AbstractHTTP2ServerConnectionFactory]
+   [org.eclipse.jetty.http2.frames Frame SettingsFrame]
+   [org.eclipse.jetty.http2 WindowRateControl$Factory]
+   [org.eclipse.jetty.http2 BufferingFlowControlStrategy FlowControlStrategy$Factory]
+   [org.eclipse.jetty.http3.server HTTP3ServerConnector AbstractHTTP3ServerConnectionFactory]))
 
 (defn is-localhost? [addr]
   (or (= addr "127.0.0.1")
@@ -59,7 +59,7 @@
 (defmacro with-jetty
   [[sym [handler opts]] & body]
   `(let [~sym (->> (assoc ~opts :lifecycle-start (partial println "JETTY START")
-                                :lifecycle-end   (partial println "JETTY END"))
+                          :lifecycle-end   (partial println "JETTY END"))
                    (jetty9/run-jetty ~handler))]
      (try ~@body
           (finally (jetty9/stop-server ~sym)))))
@@ -87,17 +87,17 @@
       (is (= "yes" (:body resp))))))
 
 #_(deftest jetty9-websocket-test
-  (with-jetty [server [(fn [req]
-                         {:ring.websocket/listener websocket-handler})
-                       {:port 50524 :join? false}]]
-    (is server)
-    (let [resp (client/get "http://localhost:50524/"
-                            {:headers {"Connection" "Upgrade"
-                                       "Upgrade" "websocket"
-                                       "Sec-WebSocket-Version" "13"
-                                       "Sec-WebSocket-Extensions" "permessage-deflate; client_max_window_bits"
-                                       "Sec-WebSocket-Key" "ZxKJ7pcanojJTxHexoMmrA=="}})]
-      (is (= 101 (:status resp))))))
+    (with-jetty [server [(fn [req]
+                           {:ring.websocket/listener websocket-handler})
+                         {:port 50524 :join? false}]]
+      (is server)
+      (let [resp (client/get "http://localhost:50524/"
+                             {:headers {"Connection" "Upgrade"
+                                        "Upgrade" "websocket"
+                                        "Sec-WebSocket-Version" "13"
+                                        "Sec-WebSocket-Extensions" "permessage-deflate; client_max_window_bits"
+                                        "Sec-WebSocket-Key" "ZxKJ7pcanojJTxHexoMmrA=="}})]
+        (is (= 101 (:status resp))))))
 
 (deftest var-handler
   (with-jetty [server [#'dummy-app {:port 50524

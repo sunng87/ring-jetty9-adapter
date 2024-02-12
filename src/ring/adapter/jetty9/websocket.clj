@@ -48,22 +48,22 @@
   (let [session (atom nil)]
     (reify Session$Listener$AutoDemanding
       (^void onWebSocketOpen [this ^Session current-session]
-       (ring-ws/on-open listener current-session)
+        (ring-ws/on-open listener current-session)
        ;; save session
-       (reset! session current-session))
+        (reset! session current-session))
       (^void onWebSocketError [this ^Throwable e]
-       (ring-ws/on-error listener @session e))
+        (ring-ws/on-error listener @session e))
       (^void onWebSocketText [this ^String message]
-       (ring-ws/on-message listener @session message))
+        (ring-ws/on-message listener @session message))
       (^void onWebSocketClose [this ^int status ^String reason]
-       (ring-ws/on-close listener @session status reason))
+        (ring-ws/on-close listener @session status reason))
       (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
-       (ring-ws/on-message listener @session payload))
+        (ring-ws/on-message listener @session payload))
       (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
-       (when (extends? ring-ws/PingListener listener)
-         (ring-ws/on-ping listener @session bytebuffer)))
+        (when (extends? ring-ws/PingListener listener)
+          (ring-ws/on-ping listener @session bytebuffer)))
       (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
-       (ring-ws/on-pong listener @session bytebuffer)))))
+        (ring-ws/on-pong listener @session bytebuffer)))))
 
 (defn reify-ws-creator
   [resp-map]
@@ -74,10 +74,10 @@
         (when (some? protocol)
           (.setAcceptedSubProtocol resp protocol))
         #_(when-let [exts (not-empty (:extensions ws-results))]
-          (.setExtensions resp (mapv #(if (string? %)
-                                        (JettyExtensionConfig. ^String %)
-                                        %)
-                                     exts)))
+            (.setExtensions resp (mapv #(if (string? %)
+                                          (JettyExtensionConfig. ^String %)
+                                          %)
+                                       exts)))
         (proxy-ws-adapter listener)))))
 
 (defn upgrade-websocket

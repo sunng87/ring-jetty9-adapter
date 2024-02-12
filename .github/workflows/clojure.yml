@@ -14,10 +14,11 @@ jobs:
     - uses: actions/setup-java@v3
       with:
         distribution: 'temurin' # See 'Supported distributions' for available options
-        java-version: '17'
+        java-version: '21'
     - uses: DeLaGuardo/setup-clojure@11.0
       with:
         lein: 'latest'
+        cljfmt: 'latest'
     - name: Cache clojure dependencies
       uses: actions/cache@v3
       with:
@@ -28,7 +29,16 @@ jobs:
         # List all files containing dependencies:
         key: cljdeps-${{ hashFiles('project.clj') }}
         restore-keys: cljdeps-
+    - name: check format
+      run: |
+        cd http3
+        cljfmt check
+        cd ..
+        cljfmt check
     - name: Install modules
-      run: cd http3; lein install
+      run: |
+        cd http3
+        lein test
+        lein install
     - name: Run tests
       run: lein test

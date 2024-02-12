@@ -85,5 +85,5 @@
         (some->> status (.setStatus response))
         (set-headers! response headers)
         (->>
-          (Response/asBufferedOutputStream request response)
-          (protocols/write-body-to-stream body response-map))))))
+         (Response/asBufferedOutputStream request response)
+         (protocols/write-body-to-stream body response-map))))))
