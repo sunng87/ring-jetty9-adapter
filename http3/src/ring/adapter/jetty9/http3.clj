@@ -1,105 +1,103 @@
 (ns ring.adapter.jetty9.http3
   (:import [org.eclipse.jetty.server
             HttpConfiguration SecureRequestCustomizer]
+           [org.eclipse.jetty.http3.api Session$Server$Listener]
            [org.eclipse.jetty.http3 HTTP3Configuration]
            [org.eclipse.jetty.http3.server
-            HTTP3ServerConnectionFactory HTTP3ServerConnector
-            AbstractHTTP3ServerConnectionFactory]
-           [org.eclipse.jetty.quic.common QuicConfiguration]
+            HTTP3ServerConnectionFactory RawHTTP3ServerConnectionFactory]
+           [org.eclipse.jetty.quic.server ServerQuicConfiguration QuicServerConnector]
            [org.eclipse.jetty.http3.api Session$Server$Listener]
            [java.nio.file Path]))
 
+(defn- default-sesison-listener []
+  (reify Session$Server$Listener))
+
 (defn- http3-server-connection-factory
-  "Configure http3 specific options on HTTP3ServerConnectionFactory created from HttpConfiguration"
-  ([^AbstractHTTP3ServerConnectionFactory factory-from-http-config]
-   (http3-server-connection-factory factory-from-http-config nil))
-  ([^AbstractHTTP3ServerConnectionFactory factory-from-http-config http3-options]
-   (let [{:keys [input-buffer-size max-blocked-streams
-                 max-request-headers-size max-response-headers-size
-                 output-buffer-size stream-idle-timeout
-                 use-input-direct-byte-buffers use-output-direct-byte-buffers]}
-         http3-options
+  "Configure http3 specific options on HTTP3ServerConnectionFactory"
+  [quic-config http3-options]
+  (let [{:keys [input-buffer-size max-blocked-streams
+                max-request-headers-size max-response-headers-size
+                output-buffer-size stream-idle-timeout
+                use-input-direct-byte-buffers use-output-direct-byte-buffers]}
+        http3-options
 
-         ^HTTP3Configuration http3-config
-         (.getHTTP3Configuration factory-from-http-config)
+        http3-config-factory
+        (RawHTTP3ServerConnectionFactory. quic-config (default-sesison-listener))
 
-         option-provided?
-         #(contains? http3-options %)]
-     (cond-> http3-config
-       (option-provided? :input-buffer-size)
-       (doto (.setInputBufferSize input-buffer-size))
+        ^HTTP3Configuration
+        http3-configuration (.getHTTP3Configuration http3-config-factory)
 
-       (option-provided? :max-blocked-streams)
-       (doto (.setMaxBlockedStreams max-blocked-streams))
+        option-provided?
+        #(contains? http3-options %)]
+    (cond-> http3-configuration
+      (option-provided? :input-buffer-size)
+      (doto (.setInputBufferSize input-buffer-size))
 
-       (option-provided? :max-request-headers-size)
-       (doto (.setMaxRequestHeadersSize max-request-headers-size))
+      (option-provided? :max-blocked-streams)
+      (doto (.setMaxBlockedStreams max-blocked-streams))
 
-       (option-provided? :max-response-headers-size)
-       (doto (.setMaxResponseHeadersSize max-response-headers-size))
+      (option-provided? :max-request-headers-size)
+      (doto (.setMaxRequestHeadersSize max-request-headers-size))
 
-       (option-provided? :output-buffer-size)
-       (doto (.setOutputBufferSize output-buffer-size))
+      (option-provided? :max-response-headers-size)
+      (doto (.setMaxResponseHeadersSize max-response-headers-size))
 
-       (option-provided? :stream-idle-timeout)
-       (doto (.setStreamIdleTimeout stream-idle-timeout))
+      (option-provided? :output-buffer-size)
+      (doto (.setOutputBufferSize output-buffer-size))
 
-       (option-provided? :use-input-direct-byte-buffers)
-       (doto (.setUseInputDirectByteBuffers use-input-direct-byte-buffers))
+      (option-provided? :stream-idle-timeout)
+      (doto (.setStreamIdleTimeout stream-idle-timeout))
 
-       (option-provided? :use-output-direct-byte-buffers)
-       (doto (.setUseOutputDirectByteBuffers use-output-direct-byte-buffers)))
-     factory-from-http-config)))
+      (option-provided? :use-input-direct-byte-buffers)
+      (doto (.setUseInputDirectByteBuffers use-input-direct-byte-buffers))
 
-(defn- http3-server-connector
+      (option-provided? :use-output-direct-byte-buffers)
+      (doto (.setUseOutputDirectByteBuffers use-output-direct-byte-buffers)))
+
+    http3-config-factory))
+
+(defn- server-quic-configuration
   "Configure quic specific options on HTTP3ServerConnector"
-  ([^HTTP3ServerConnector http3-connector-default]
-   (http3-server-connector http3-connector-default nil))
-  ([^HTTP3ServerConnector http3-connector-default http3-options]
-   (let [{:keys [bidirectional-stream-recv-window disable-active-migration
-                 max-bidirectional-remote-streams max-unidirectional-remote-streams
-                 protocols session-recv-window
-                 unidirectional-stream-recv-window
-                 pem-work-directory]}
-         http3-options
+  [ssl-factory pem-work-directory quic-options]
+  (let [{:keys [bidirectional-stream-recv-window disable-active-migration
+                max-bidirectional-remote-streams max-unidirectional-remote-streams
+                protocols session-recv-window
+                unidirectional-stream-recv-window]}
+        quic-options
 
-         ^QuicConfiguration quic-config
-         (.getQuicConfiguration http3-connector-default)
+        ^ServerQuicConfiguration quic-config
+        (ServerQuicConfiguration. ssl-factory (Path/of pem-work-directory (into-array String [])))
 
-         option-provided?
-         #(contains? http3-options %)]
-     (cond-> quic-config
-       (option-provided? :pem-work-directory)
-       (doto (.setPemWorkDirectory (Path/of pem-work-directory (into-array String []))))
+        option-provided?
+        #(contains? quic-options %)]
+    (cond-> quic-config
+      (option-provided? :bidirectional-stream-recv-window)
+      (doto (.setBidirectionalStreamRecvWindow bidirectional-stream-recv-window))
 
-       (option-provided? :bidirectional-stream-recv-window)
-       (doto (.setBidirectionalStreamRecvWindow bidirectional-stream-recv-window))
+      (option-provided? :disable-active-migration)
+      (doto (.setDisableActiveMigration disable-active-migration))
 
-       (option-provided? :disable-active-migration)
-       (doto (.setDisableActiveMigration disable-active-migration))
+      (option-provided? :max-bidirectional-remote-streams)
+      (doto (.setMaxBidirectionalRemoteStreams max-bidirectional-remote-streams))
 
-       (option-provided? :max-bidirectional-remote-streams)
-       (doto (.setMaxBidirectionalRemoteStreams max-bidirectional-remote-streams))
+      (option-provided? :max-unidirectional-remote-streams)
+      (doto (.setMaxUnidirectionalRemoteStreams max-unidirectional-remote-streams))
 
-       (option-provided? :max-unidirectional-remote-streams)
-       (doto (.setMaxUnidirectionalRemoteStreams max-unidirectional-remote-streams))
+      (option-provided? :protocols)
+      (doto (.setProtocols protocols))
 
-       (option-provided? :protocols)
-       (doto (.setProtocols protocols))
+      (option-provided? :session-recv-window)
+      (doto (.setSessionRecvWindow session-recv-window))
 
-       (option-provided? :session-recv-window)
-       (doto (.setSessionRecvWindow session-recv-window))
+      (option-provided? :unidirectional-stream-recv-window)
+      (doto (.setUnidirectionalStreamRecvWindow unidirectional-stream-recv-window)))
+    quic-config))
 
-       (option-provided? :unidirectional-stream-recv-window)
-       (doto (.setUnidirectionalStreamRecvWindow unidirectional-stream-recv-window)))
-     http3-connector-default)))
-
-(defn http3-connector [server http-configuration http3-options ssl-context-factory port host]
-  (let [connection-factory (-> (HTTP3ServerConnectionFactory. http-configuration)
-                               (http3-server-connection-factory http3-options))
-        connector (-> (HTTP3ServerConnector. server ssl-context-factory
-                                             (into-array HTTP3ServerConnectionFactory [connection-factory]))
-                      (http3-server-connector http3-options))]
+(defn quic-server-connector [server http3-options ssl-context-factory pem-work-directory port host]
+  (let [quic-config (server-quic-configuration ssl-context-factory pem-work-directory http3-options)
+        connection-factory (http3-server-connection-factory quic-config http3-options)
+        connector (QuicServerConnector. server ^ServerQuicConfiguration quic-config
+                                        (into-array RawHTTP3ServerConnectionFactory [connection-factory]))]
     (doto connector
       (.setPort port)
       (.setHost host))))

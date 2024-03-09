@@ -293,7 +293,7 @@
          :use-input-direct-byte-buffers false
          :use-output-direct-byte-buffers false}]
     (.mkdirs (clojure.java.io/file pem-work-dir))
-    (with-jetty [server [dummy-app {:ssl-port        50524
+    (with-jetty [server [dummy-app {:ssl-port        50525
                                     :port            50523
                                     :ssl?            true
                                     :join?           false

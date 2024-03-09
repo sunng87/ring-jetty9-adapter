@@ -8,7 +8,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ring/ring-core "1.11.0" :exclusions [commons-io]]
                  [org.ring-clojure/ring-websocket-protocols "1.11.0"]
-                 [info.sunng/ring-jetty9-adapter-http3 "0.4.6" :optional true]
+                 [info.sunng/ring-jetty9-adapter-http3 "0.5.0-SNAPSHOT" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty/jetty-util ~jetty-version]
                  [org.eclipse.jetty.websocket/jetty-websocket-jetty-api ~jetty-version]
