@@ -201,10 +201,10 @@
       (.setHost host)
       (.setIdleTimeout max-idle-time))))
 
-(defn- http3-connector [& args]
+(defn- quic-server-connector [& args]
   ;; load http3 module dynamically
-  (let [http3-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/http3-connector)]
-    (apply http3-connector* args)))
+  (let [quic-server-connector* @(requiring-resolve 'ring.adapter.jetty9.http3/quic-server-connector)]
+    (apply quic-server-connector* args)))
 
 (defn- create-server
   "Construct a Jetty Server instance."
@@ -249,9 +249,9 @@
                      ssl?  (conj (https-connector server http-configuration @ssl-factory
                                                   h2? h2-options ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? h2-options port host max-idle-time proxy?))
-                     http3? (conj (http3-connector server http-configuration
-                                                   (assoc http3-options :pem-work-directory http3-pem-work-directory)
-                                                   @ssl-factory ssl-port host)))]
+                     http3? (conj (quic-server-connector server http3-options
+                                                         @ssl-factory http3-pem-work-directory
+                                                         ssl-port host)))]
     (when (and ssl?
                (not (false? ssl-hot-reload?))
                (some? (.getKeyStorePath ^SslContextFactory @ssl-factory)))
