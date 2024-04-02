@@ -86,6 +86,26 @@
       (is (= 200 (:status resp)))
       (is (= "yes" (:body resp))))))
 
+(deftest wrap-jetty-handler-test
+  (let [counter (atom 0)]
+    (with-jetty [server [(test-app-maker {:request-method :post
+                                          :content-type "text/plain"
+                                          :content-length 6})
+                         {:port 50524
+                          :join? false
+                          :wrap-jetty-handler (fn [handler]
+                                                (proxy [org.eclipse.jetty.server.Handler$Abstract] []
+                                                  (handle [req resp cb]
+                                                    (swap! counter inc)
+                                                    (.handle handler req resp cb))))}]]
+      (is server)
+      (let [resp (client/post "http://localhost:50524/"
+                              {:body "tomcat"
+                               :content-type "text/plain"})]
+        (is (= 200 (:status resp)))
+        (is (= "yes" (:body resp)))
+        (is (= 1 @counter))))))
+
 #_(deftest jetty9-websocket-test
     (with-jetty [server [(fn [req]
                            {:ring.websocket/listener websocket-handler})
