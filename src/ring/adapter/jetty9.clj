@@ -334,9 +334,10 @@
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         context-handler (ContextHandler. "/")
-        ring-app-handler (if async?
-                           (proxy-async-handler handler options)
-                           (proxy-handler handler options))]
+        ring-app-handler (wrap-jetty-handler
+                          (if async?
+                            (proxy-async-handler handler options)
+                            (proxy-handler handler options)))]
     (.setHandler context-handler ^Handler ring-app-handler)
     (.setHandler s ^Handler context-handler)
     (ws/ensure-container s context-handler)
