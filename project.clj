@@ -5,9 +5,9 @@
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.11.1"]
-                 [ring/ring-core "1.11.0" :exclusions [commons-io]]
-                 [org.ring-clojure/ring-websocket-protocols "1.11.0"]
+  :dependencies [[org.clojure/clojure "1.11.2"]
+                 [org.ring-clojure/ring-core-protocols "1.12.1"]
+                 [org.ring-clojure/ring-websocket-protocols "1.12.1"]
                  [info.sunng/ring-jetty9-adapter-http3 "0.5.1" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty/jetty-util ~jetty-version]
@@ -27,14 +27,19 @@
                                   #_[stylefruits/gniazdo "1.1.4"]]
                    :resource-paths ["dev-resources"]}
              :example-http2 {:source-paths ["examples/"]
+                             :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
                              :main ^:skip-aot rj9a.http2}
              :example-http3 {:source-paths ["examples/"]
+                             :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
                              :resource-paths ["dev-resources/"]
                              :main ^:skip-aot rj9a.http3}
              :example-websocket {:source-paths ["examples/"]
+                                 :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
+                            :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
                             :main ^:skip-aot rj9a.http}
              :example-async {:source-paths ["examples/"]
+                             :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
                              :main ^:skip-aot rj9a.async}
              :uberjar {:aot :all}})
