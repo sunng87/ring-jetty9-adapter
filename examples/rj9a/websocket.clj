@@ -15,6 +15,9 @@
                                            (tap> [:ws :close status-code reason]))
                                :on-pong (fn [socket data]
                                           (tap> [:ws :pong]))
+                               :on-ping (fn [socket data]
+                                          (tap> [:ws :ping])
+                                          (ringws/pong socket))
                                :on-error (fn [socket error]
                                            (.printStackTrace error)
                                            (tap> [:ws :error error]))}

@@ -34,7 +34,8 @@
                              :resource-paths ["dev-resources/"]
                              :main ^:skip-aot rj9a.http3}
              :example-websocket {:source-paths ["examples/"]
-                                 :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
+                                 :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
+                                                [ring/ring-core "1.12.1"]]
                                  :main ^:skip-aot rj9a.websocket}
              :example-http {:source-paths ["examples/"]
                             :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
