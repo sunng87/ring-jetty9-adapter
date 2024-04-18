@@ -60,7 +60,7 @@
       (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
         (ring-ws/on-message listener @session payload))
       (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
-        (when (extends? ring-ws/PingListener listener)
+        (when (satisfies? ring-ws/PingListener listener)
           (ring-ws/on-ping listener @session bytebuffer)))
       (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
         (ring-ws/on-pong listener @session bytebuffer)))))
