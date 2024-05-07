@@ -1,6 +1,6 @@
-(def jetty-version "12.0.8")
+(def jetty-version "12.0.9")
 
-(defproject info.sunng/ring-jetty9-adapter-http3 "0.5.1"
+(defproject info.sunng/ring-jetty9-adapter-http3 "0.5.2"
   :description "Ring adapter for jetty 9 and above, meta package for http3"
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
