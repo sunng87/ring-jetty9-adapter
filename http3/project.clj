@@ -7,5 +7,5 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
-  :dependencies [[org.clojure/clojure "1.11.2"]
+  :dependencies [[org.clojure/clojure "1.11.3"]
                  [org.eclipse.jetty.http3/jetty-http3-server ~jetty-version]])
