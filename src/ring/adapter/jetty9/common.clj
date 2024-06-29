@@ -21,10 +21,22 @@
   [^HttpField header]
   [(.getLowerCaseName header) (.getValue header)])
 
+(defn- combine-headers
+  ([] {})
+  ([result] result)
+  ([result [k v]]
+   (if (and (= "cookie" k) (get result k))
+     (update result k #(str % "; " v))
+     (assoc result k v))))
+
 (defn get-headers
   "Creates a name/value map of all the request headers."
   [^Request request]
-  (into {} (map header-kv*) (.getHeaders request)))
+  (transduce
+   (map header-kv*)
+   combine-headers
+   {}
+   (.getHeaders request)))
 
 (defonce noop (constantly nil))
 
