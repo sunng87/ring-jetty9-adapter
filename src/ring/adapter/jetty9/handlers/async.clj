@@ -23,21 +23,20 @@
    ^Request request
    ^Response response
    ^Callback callback]
-  (try
-    (let [[handler options] (.state this)
-          ;;TODO: async timeout
-          ;; async-timeout (:async-timeout options 30000)
-          ]
-      (handler
-       (common/build-request-map request)
-       (fn [response-map]
-         (let [response-map (common/normalize-response response-map)]
-           (if (common/websocket-upgrade-response? response-map)
-             (ws/upgrade-websocket request response callback response-map)
-             (common/update-response request response response-map)))
-         (.succeeded callback))
-       (fn [^Throwable exception]
-         (Response/writeError request response callback exception)
-         (.failed callback exception))))
-    (finally
-      true)))
+  (let [[handler options] (.state this)
+        ;;TODO: async timeout
+        ;; async-timeout (:async-timeout options 30000)
+        ]
+    (handler
+     (common/build-request-map request)
+     (fn [response-map]
+       (let [response-map (common/normalize-response response-map)]
+         (if (common/websocket-upgrade-response? response-map)
+           (ws/upgrade-websocket request response callback response-map)
+           (common/update-response request response response-map)))
+       (.succeeded callback))
+     (fn [^Throwable exception]
+       (Response/writeError request response callback exception)
+       (.failed callback exception))))
+
+  true)
