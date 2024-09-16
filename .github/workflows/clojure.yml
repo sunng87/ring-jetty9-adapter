@@ -33,9 +33,16 @@ jobs:
       run: |
         cd http3
         cljfmt check
+        cd http2
+        cljfmt check
         cd ..
         cljfmt check
-    - name: Install modules
+    - name: Install http2
+      run: |
+        cd http2
+        lein test
+        lein install
+    - name: Install http3
       run: |
         cd http3
         lein test
