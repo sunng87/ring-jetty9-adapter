@@ -8,14 +8,12 @@
   :dependencies [[org.clojure/clojure "1.12.0"]
                  [org.ring-clojure/ring-core-protocols "1.12.2"]
                  [org.ring-clojure/ring-websocket-protocols "1.12.2"]
+                 [info.sunng/ring-jetty9-adapter-http2 "0.1.0" :optional true]
                  [info.sunng/ring-jetty9-adapter-http3 "0.6.0" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty/jetty-util ~jetty-version]
                  [org.eclipse.jetty.websocket/jetty-websocket-jetty-api ~jetty-version]
-                 [org.eclipse.jetty.websocket/jetty-websocket-jetty-server ~jetty-version]
-                 [org.eclipse.jetty.http2/jetty-http2-server ~jetty-version]
-                 [org.eclipse.jetty/jetty-alpn-server ~jetty-version]
-                 [org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]]
+                 [org.eclipse.jetty.websocket/jetty-websocket-jetty-server ~jetty-version]]
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :jvm-args ["-Xmx128m"]
@@ -28,6 +26,7 @@
                    :resource-paths ["dev-resources"]}
              :example-http2 {:source-paths ["examples/"]
                              :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
+                             :resource-paths ["dev-resources/"]
                              :main ^:skip-aot rj9a.http2}
              :example-http3 {:source-paths ["examples/"]
                              :dependencies [[org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]]
