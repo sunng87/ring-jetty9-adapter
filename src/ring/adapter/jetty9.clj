@@ -77,7 +77,8 @@
     (when h2?
       (.setCipherComparator context-server
                             @(requiring-resolve 'ring.adapter.jetty9.http2/http2-cipher-comparator)))
-    (.setProvider context-server ssl-provider)
+    (when ssl-provider
+      (.setProvider context-server ssl-provider))
     ;; classpath support
     (if (string? keystore)
       (if (string/starts-with? keystore "classpath:")
@@ -236,7 +237,7 @@
   :truststore-type - the format of trust store
   :trust-password - the password to the truststore
   :ssl-protocols - the ssl protocols to use, default to [\"TLSv1.3\" \"TLSv1.2\"]
-  :ssl-provider - the ssl provider, default to \"Conscrypt\"
+  :ssl-provider - the ssl provider
   :exclude-ciphers      - when :ssl? is true, additionally exclude these
                           cipher suites
   :exclude-protocols    - when :ssl? is true, additionally exclude these
