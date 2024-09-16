@@ -31,12 +31,13 @@ jobs:
         restore-keys: cljdeps-
     - name: check format
       run: |
-        cd http3
         cljfmt check
-        cd http2
+        pushd http3
         cljfmt check
-        cd ..
+        popd
+        pushd http2
         cljfmt check
+        popd
     - name: Install http2
       run: |
         cd http2
