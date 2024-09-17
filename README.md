@@ -82,8 +82,17 @@ In ns declaration:
 
 ### HTTP/2
 
-To enable HTTP/2 on cleartext and secure transport, you can simply add
-options to `run-jetty` like:
+HTTP/2 becomes an optional feature since rj9a `0.35`, to enable HTTP/2 on
+cleartext and secure transport, first you need to add our optional dependency:
+
+```
+[info.sunng/ring-jetty9-adapter-http2 "VERSION"]
+```
+
+`VERSION` can be checked
+[here](https://clojars.org/info.sunng/ring-jetty9-adapter-http2)
+
+Second, provide HTTP/2 options to `run-jetty` like:
 
 ```clojure
 (jetty/run-jetty dummy-app {:port 5000
@@ -101,26 +110,27 @@ version `0.17.1` and newer, `org.eclipse.jetty/jetty-alpn-java-server`
 is included by default.
 
 For rj9a versions prior to `0.17`, you will need additional dependency
-to enable ALPN. Add following dependencies according to the jdk
+to enable ALPN. Add following dependencies according to the JDK
 version you use.
 
-* For JDK 11 and above, add `[org.eclipse.jetty/jetty-alpn-java-server ~jetty-version]`
-* For OpenJDK 8u252 and above, add `[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]`
-* For OpenJDK 8 prior to update 252, please [check
-`example-http2-legacy`
-profile](https://github.com/sunng87/ring-jetty9-adapter/blob/0.14.3/project.clj#L26)
-in project.clj for boot-classpath configuration
-* For any version of JDK users, conscrypt implementation is supported by
-adding `[org.eclipse.jetty/jetty-alpn-conscrypt-server
-~jetty-version]` but it's not recommended for now because of [memory
-leak issue](https://github.com/google/conscrypt/issues/835)
+* For JDK 11 and above, add `[org.eclipse.jetty/jetty-alpn-java-server
+  ~jetty-version]`
+* For OpenJDK 8u252 and above, add
+  `[org.eclipse.jetty/jetty-alpn-openjdk8-server ~jetty-version]`
+* For OpenJDK 8 prior to update 252, please [check `example-http2-legacy`
+  profile](https://github.com/sunng87/ring-jetty9-adapter/blob/0.14.3/project.clj#L26)
+  in `project.clj` for boot-classpath configuration
+* For any version of JDK users, conscrypt implementation is supported by adding
+  `[org.eclipse.jetty/jetty-alpn-conscrypt-server ~jetty-version]` but it's not
+  recommended for now because of [memory leak
+  issue](https://github.com/google/conscrypt/issues/835)
 
-Note your will need to replace `~jetty-version` with corresponding jetty version that
-your version of rj9a uses.
+Note your will need to replace `~jetty-version` with corresponding jetty version
+that your version of rj9a uses.
 
 ### HTTP/3
 
-From 10.0.9, Jetty ships an expiremental HTTP/3 implementation based
+From 10.0.9, Jetty ships an experimental HTTP/3 implementation based
 on [Jetty's own build](https://github.com/jetty-project/jetty-quiche-native) of
 [the quiche library](https://github.com/cloudflare/quiche). rj9a `0.17.6` made
 it an optional feature. To enable HTTP/3 support, you will need to:
@@ -167,10 +177,10 @@ can be defined as a map of listener functions:
 Functions are provided in `ring.websocket` to read and write data on the `ws`
 value:
 
-* (ring.websocket/send ws msg)
-* (ring.websocket/send ws msg succeed-callback fail-callback)
-* (ring.websocket/ping ws msg)
-* (ring.websocket/close ws)
+* `(ring.websocket/send ws msg)`
+* `(ring.websocket/send ws msg succeed-callback fail-callback)`
+* `(ring.websocket/ping ws msg)`
+* `(ring.websocket/close ws)`
 
 Notice that we support different type of msg:
 
@@ -201,6 +211,7 @@ ws.onopen = ....
 
 If you want to omit the trailing slash from your URLs (and not receive
 a redirect from Jetty), you can start the server like:
+
 ```clojure
 (run-jetty app {:allow-null-path-info true})
 ```
@@ -223,13 +234,13 @@ You can find examples in `examples` folder. To run example:
   example of ring handler
 * async: `lein with-profile example-async run` ring 1.6 async
   handler example
-* http2 `lein with-profile example-http2 run`
-* http3 `lein with-profile example-http3 run`
+* http2: `lein with-profile example-http2 run`
+* http3: `lein with-profile example-http3 run`
 * websocket: `lein with-profile example-websocket run`
 
 ## License
 
-Copyright © 2013-2023 Sun Ning
+Copyright © 2013-2024 Sun Ning
 
 Distributed under the Eclipse Public License, the same as Clojure.
 
