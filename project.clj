@@ -1,6 +1,6 @@
 (def jetty-version "12.0.13")
 
-(defproject info.sunng/ring-jetty9-adapter "0.34.1-SNAPSHOT"
+(defproject info.sunng/ring-jetty9-adapter "0.35.0-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
@@ -19,7 +19,7 @@
   :jvm-args ["-Xmx128m"]
   :aot [ring.adapter.jetty9.handlers.sync
         ring.adapter.jetty9.handlers.async]
-  :profiles {:dev {:dependencies [[clj-http "3.12.3"]
+  :profiles {:dev {:dependencies [[clj-http "3.13.0"]
                                   [less-awful-ssl "1.0.6"]
                                   [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
                                   #_[stylefruits/gniazdo "1.1.4"]]
