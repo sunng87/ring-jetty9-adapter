@@ -29,15 +29,14 @@ version works for your stack, check the version matrix below.
 | 0.33.x | 12.0.x | 17 | 1.11 | N/A | 1.12 | false |
 | 0.32.x | 12.0.x | 17 | 1.11 | N/A | 1.11 | false |
 | 0.30.x | 12.0.x | 17 | 1.11 | N/A | 1.10 | false |
-| 0.22.x | 11.0.x | 11 | 1.11 | Jakarta 5.0 | 1.10 | true |
+| 0.22.x | 11.0.x | 11 | 1.11 | Jakarta 5.0 | 1.10 | false |
 | 0.17.x | 10.0.x | 11 | 1.10 | Jakarta 4.0 | 1.9 | false |
 | 0.14.x | 9.4.x | 8 | 1.10 | 3.1 | 1.8 | false |
 
 The `master` branch will keep tracking Jetty 12 as our default release
-channel. For those users who stick with JDK 11, we will keep maintaining `0.22`
-releases on [branch
-`jetty-11`](https://github.com/sunng87/ring-jetty9-adapter/tree/jetty-11) which
-is based on Jetty 11.
+channel. Jetty versions prior to 12 have reached their EOF (support is only
+available with commercial version), so now we are dropping support of them. But
+you can still use it.
 
 Note that from 0.33 of rj9a, we dropped dependencies to `ring/ring-core` and
 only depend on their protocol artifacts. This won't be a problem if your
