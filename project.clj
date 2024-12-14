@@ -1,4 +1,4 @@
-(def jetty-version "12.0.15")
+(def jetty-version "12.0.16")
 
 (defproject info.sunng/ring-jetty9-adapter "0.36.1-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
@@ -8,8 +8,8 @@
   :dependencies [[org.clojure/clojure "1.12.0"]
                  [org.ring-clojure/ring-core-protocols "1.13.0"]
                  [org.ring-clojure/ring-websocket-protocols "1.13.0"]
-                 [info.sunng/ring-jetty9-adapter-http2 "0.1.2" :optional true]
-                 [info.sunng/ring-jetty9-adapter-http3 "0.6.2" :optional true]
+                 [info.sunng/ring-jetty9-adapter-http2 "0.1.3" :optional true]
+                 [info.sunng/ring-jetty9-adapter-http3 "0.6.3" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
                  [org.eclipse.jetty/jetty-util ~jetty-version]
                  [org.eclipse.jetty.websocket/jetty-websocket-jetty-api ~jetty-version]
@@ -20,7 +20,7 @@
   :aot [ring.adapter.jetty9.handlers.sync
         ring.adapter.jetty9.handlers.async]
   :profiles {:dev {:dependencies [[clj-http "3.13.0"]
-                                  [less-awful-ssl "1.0.6"]
+                                  [less-awful-ssl "1.0.7"]
                                   [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
                                   #_[stylefruits/gniazdo "1.1.4"]]
                    :resource-paths ["dev-resources"]}
