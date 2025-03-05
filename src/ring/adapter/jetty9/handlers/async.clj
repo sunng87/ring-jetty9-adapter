@@ -36,7 +36,6 @@
            (common/update-response request response response-map)))
        (.succeeded callback))
      (fn [^Throwable exception]
-       (Response/writeError request response callback exception)
        (.failed callback exception))))
 
   true)
