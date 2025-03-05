@@ -23,18 +23,14 @@
    ^Request request
    ^Response response
    ^Callback callback]
-  (try
-    (let [[handler options] (.state this)
-          response-map (-> request
-                           common/build-request-map
-                           handler
-                           common/normalize-response)]
-      (if (common/websocket-upgrade-response? response-map)
-        (ws/upgrade-websocket request response callback response-map options)
-        (do
-          (common/update-response request response response-map)
-          (.succeeded callback)
-          true)))
-    (catch Throwable e
-      (Response/writeError request response callback e)
-      true)))
+  (let [[handler options] (.state this)
+        response-map (-> request
+                         common/build-request-map
+                         handler
+                         common/normalize-response)]
+    (if (common/websocket-upgrade-response? response-map)
+      (ws/upgrade-websocket request response callback response-map options)
+      (do
+        (common/update-response request response response-map)
+        (.succeeded callback)
+        true))))
