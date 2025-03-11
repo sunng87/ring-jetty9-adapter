@@ -1,5 +1,5 @@
 (ns ring.adapter.jetty9.http3
-  (:import[org.eclipse.jetty.http3.api Session$Server$Listener]
+  (:import [org.eclipse.jetty.http3.api Session$Server$Listener]
            [org.eclipse.jetty.http3 HTTP3Configuration]
            [org.eclipse.jetty.http3.server RawHTTP3ServerConnectionFactory]
            [org.eclipse.jetty.quic.server ServerQuicConfiguration QuicServerConnector]
