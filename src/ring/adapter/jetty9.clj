@@ -2,11 +2,11 @@
   "Adapter for the Jetty 10 server, with websocket support.
   Derived from ring.adapter.jetty"
   (:import [org.eclipse.jetty.server
-            Server Request ServerConnector Connector Handler
+            Server ServerConnector Connector Handler
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
-           [org.eclipse.jetty.server.handler ContextHandler BufferedResponseHandler]
+           [org.eclipse.jetty.server.handler ContextHandler]
            [org.eclipse.jetty.util VirtualThreads]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
            [org.eclipse.jetty.util.resource URLResourceFactory]
@@ -17,7 +17,6 @@
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
    [clojure.string :as string]
-   [ring.adapter.jetty9.common :as common]
    [ring.adapter.jetty9.websocket :as ws]))
 
 (def ws-upgrade-request? ws/ws-upgrade-request?)
@@ -66,8 +65,9 @@
       #_(.setIdleTimeout idle-timeout-ms)
       (.addCustomizer secure-customizer))))
 
-(defn- ^SslContextFactory$Server ssl-context-factory
-  [{:as options
+(defn- ssl-context-factory
+  ^SslContextFactory$Server
+  [{:as _options
     :keys [keystore keystore-type key-password client-auth key-manager-password
            truststore trust-password truststore-type ssl-protocols ssl-provider
            exclude-ciphers replace-exclude-ciphers? exclude-protocols replace-exclude-protocols?
@@ -279,9 +279,8 @@
                    kebab cased without \"set\", e.g. setStreamIdleTimeout -> stream-idle-timeout)"
   [handler {:as options
             :keys [configurator join? async?
-                   allow-null-path-info wrap-jetty-handler]
-            :or {allow-null-path-info false
-                 join? true
+                   wrap-jetty-handler]
+            :or {join? true
                  wrap-jetty-handler identity}}]
   (let [^Server s (create-server options)
         context-handler (ContextHandler. "/")

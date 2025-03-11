@@ -19,6 +19,7 @@ jobs:
       with:
         lein: 'latest'
         cljfmt: 'latest'
+        clj-kondo: 'latest'
     - name: Cache clojure dependencies
       uses: actions/cache@v3
       with:
@@ -37,6 +38,14 @@ jobs:
         popd
         pushd http2
         cljfmt check
+        popd
+    - name: lint
+        clj-kondo --lint src
+        pushd http3
+        clj-kondo --lint src
+        popd
+        pushd http2
+        clj-kondo --lint src
         popd
     - name: Install http2
       run: |
