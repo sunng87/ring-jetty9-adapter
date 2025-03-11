@@ -40,6 +40,7 @@ jobs:
         cljfmt check
         popd
     - name: lint
+      run: |
         clj-kondo --lint src
         pushd http3
         clj-kondo --lint src
