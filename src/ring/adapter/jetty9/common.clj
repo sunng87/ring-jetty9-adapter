@@ -1,9 +1,8 @@
 (ns ring.adapter.jetty9.common
   (:require [ring.core.protocols :as protocols])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes MimeTypes$Type]
-           [org.eclipse.jetty.server.handler BufferedResponseHandler]
-           [org.eclipse.jetty.server Request Response SecureRequestCustomizer]
-           [org.eclipse.jetty.io Content$Sink EndPoint$SslSessionData]
+           [org.eclipse.jetty.server Request Response]
+           [org.eclipse.jetty.io EndPoint$SslSessionData]
            [org.eclipse.jetty.http ImmutableHttpFields HttpFields$Mutable HttpURI]
            [java.util Locale]))
 

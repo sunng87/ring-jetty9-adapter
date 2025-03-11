@@ -3,16 +3,12 @@
            [org.eclipse.jetty.server.handler ContextHandler]
            [org.eclipse.jetty.websocket.api Session Session$Listener$AutoDemanding Callback]
            [org.eclipse.jetty.websocket.server ServerWebSocketContainer
-            WebSocketCreator ServerUpgradeRequest WebSocketUpgradeHandler]
-           [org.eclipse.jetty.websocket.common JettyExtensionConfig]
-           [clojure.lang IFn]
+            WebSocketCreator]
            [java.nio ByteBuffer]
-           [java.util Locale]
            [java.time Duration])
   (:require [clojure.string :as string]
             [ring.websocket.protocols :as ring-ws]
-            [ring.adapter.jetty9.common :refer [build-request-map
-                                                get-headers set-headers! noop]]))
+            [ring.adapter.jetty9.common :refer [noop]]))
 
 (defn- write-callback
   [write-success write-failed]
@@ -47,28 +43,28 @@
   [listener]
   (let [session (atom nil)]
     (reify Session$Listener$AutoDemanding
-      (^void onWebSocketOpen [this ^Session current-session]
+      (^void onWebSocketOpen [_this ^Session current-session]
         (ring-ws/on-open listener current-session)
        ;; save session
         (reset! session current-session))
-      (^void onWebSocketError [this ^Throwable e]
+      (^void onWebSocketError [_this ^Throwable e]
         (ring-ws/on-error listener @session e))
-      (^void onWebSocketText [this ^String message]
+      (^void onWebSocketText [_this ^String message]
         (ring-ws/on-message listener @session message))
-      (^void onWebSocketClose [this ^int status ^String reason]
+      (^void onWebSocketClose [_this ^int status ^String reason]
         (ring-ws/on-close listener @session status reason))
-      (^void onWebSocketBinary [this ^ByteBuffer payload ^Callback cb]
+      (^void onWebSocketBinary [_this ^ByteBuffer payload ^Callback _cb]
         (ring-ws/on-message listener @session payload))
-      (^void onWebSocketPing [this ^ByteBuffer bytebuffer]
+      (^void onWebSocketPing [_this ^ByteBuffer bytebuffer]
         (when (satisfies? ring-ws/PingListener listener)
           (ring-ws/on-ping listener @session bytebuffer)))
-      (^void onWebSocketPong [this ^ByteBuffer bytebuffer]
+      (^void onWebSocketPong [_this ^ByteBuffer bytebuffer]
         (ring-ws/on-pong listener @session bytebuffer)))))
 
 (defn reify-ws-creator
   [resp-map]
   (reify WebSocketCreator
-    (createWebSocket [this req resp cb]
+    (createWebSocket [_this _req resp _cb]
       (let [listener (:ring.websocket/listener resp-map)
             protocol (:ring.websocket/protocol resp-map)]
         (when (some? protocol)
