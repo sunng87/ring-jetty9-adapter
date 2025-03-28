@@ -6,8 +6,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.12.0"]
-                 [org.ring-clojure/ring-core-protocols "1.13.1"]
-                 [org.ring-clojure/ring-websocket-protocols "1.13.1"]
+                 [org.ring-clojure/ring-core-protocols "1.14.1"]
+                 [org.ring-clojure/ring-websocket-protocols "1.14.1"]
                  [info.sunng/ring-jetty9-adapter-http2 "0.1.5" :optional true]
                  [info.sunng/ring-jetty9-adapter-http3 "0.6.5" :optional true]
                  [org.eclipse.jetty/jetty-server ~jetty-version]
