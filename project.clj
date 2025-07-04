@@ -1,7 +1,7 @@
 (def jetty-version "12.0.23")
 (def ring-version "1.14.2")
 
-(defproject info.sunng/ring-jetty9-adapter "0.37.5"
+(defproject info.sunng/ring-jetty9-adapter "0.37.6-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket and spdy"
   :url "http://github.com/sunng87/ring-jetty9-adapter"
   :license {:name "Eclipse Public License"
