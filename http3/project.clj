@@ -8,4 +8,5 @@
   :deploy-repositories {"releases" :clojars}
   :global-vars {*warn-on-reflection* true}
   :dependencies [[org.clojure/clojure "1.12.1"]
-                 [org.eclipse.jetty.http3/jetty-http3-server ~jetty-version]])
+                 [org.eclipse.jetty.http3/jetty-http3-server ~jetty-version]
+                 [org.eclipse.jetty.quic/jetty-quic-quiche-server ~jetty-version]])
