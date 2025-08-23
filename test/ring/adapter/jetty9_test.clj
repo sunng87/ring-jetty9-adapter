@@ -234,7 +234,6 @@
         (doseq [fo factories-options]
           (is (= fo h2-options)))))))
 
-
 (defn- get-quic-options
   [http3-server-connector]
   (->> (.getServerQuicConfiguration http3-server-connector)
