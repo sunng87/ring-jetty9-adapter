@@ -20,10 +20,9 @@
 
 (defn- http3-server-connection-factory
   "Configure http3 specific options on HTTP3ServerConnectionFactory"
-  []
-  ;;TODO: http config
+  [jetty-http-configuration]
   (let [http3-connection-factory
-        (RawHTTP3ServerConnectionFactory. (default-sesison-listener))]
+        (RawHTTP3ServerConnectionFactory. jetty-http-configuration (default-sesison-listener))]
 
     http3-connection-factory))
 
@@ -46,9 +45,9 @@
 
     quic-config))
 
-(defn quic-server-connector [server http3-options ssl-context-factory pem-work-directory port host]
+(defn quic-server-connector [server http3-options jetty-http-configuration ssl-context-factory pem-work-directory port host]
   (let [quic-config (server-quic-configuration pem-work-directory http3-options)
-        connection-factory (http3-server-connection-factory)
+        connection-factory (http3-server-connection-factory jetty-http-configuration)
         connector (QuicheServerConnector. server ssl-context-factory ^QuicheServerQuicConfiguration quic-config
                                           (into-array RawHTTP3ServerConnectionFactory [connection-factory]))]
     (doto connector

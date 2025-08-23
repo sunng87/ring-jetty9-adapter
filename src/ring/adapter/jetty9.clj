@@ -201,7 +201,8 @@
                                                   h2? h2-options ssl-port host max-idle-time))
                      http? (conj (http-connector server http-configuration h2c? h2-options port host max-idle-time proxy?))
                      http3? (conj (quic-server-connector server http3-options
-                                                         @ssl-factory http3-pem-work-directory
+                                                         http-configuration @ssl-factory
+                                                         http3-pem-work-directory
                                                          ssl-port host)))]
     (when (and ssl?
                (not (false? ssl-hot-reload?))
