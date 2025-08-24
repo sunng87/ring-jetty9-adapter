@@ -6,7 +6,6 @@
             HttpConfiguration HttpConnectionFactory
             ConnectionFactory SecureRequestCustomizer
             ProxyConnectionFactory]
-           [org.eclipse.jetty.http CookieCompliance UriCompliance HttpCompliance MultiPartCompliance]
            [org.eclipse.jetty.server.handler ContextHandler]
            [org.eclipse.jetty.util VirtualThreads]
            [org.eclipse.jetty.util.component AbstractLifeCycle]
@@ -18,7 +17,8 @@
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
    [clojure.string :as string]
-   [ring.adapter.jetty9.websocket :as ws]))
+   [ring.adapter.jetty9.websocket :as ws]
+   [ring.adapter.jetty9.common :as common]))
 
 (def ws-upgrade-request? ws/ws-upgrade-request?)
 
@@ -34,118 +34,51 @@
 
 (defn- http-config
   "Creates jetty http configurator"
-  [{:as _
-    :keys [input-buffer-size
-           output-buffer-size
-           output-aggregation-size
-           request-header-size
-           response-header-size
-           max-response-header-size
-           header-cache-size
-           header-cache-case-sensitive?
-           secure-port
-           idle-timeout
-           secure-scheme
-           send-server-version?
-           send-x-powered-by?
-           send-date-header?
-           delay-dispatch-until-content?
-           persistent-connections-enabled?
-           max-error-dispatches
-           use-input-direct-byte-buffers?
-           use-output-direct-byte-buffers?
-           min-request-data-rate
-           min-response-data-rate
-           http-compliance
-           uri-compliance
-           redirect-uri-compliance
-           request-cookie-compliance
-           response-cookie-compliance
-           multi-part-compliance
-           notify-remote-async-errors?
-           relative-redirect-allowed?
-           generate-redirect-body?
-           server-authority
-           local-address
-           max-unconsumed-request-content-reads
-           min-input-buffer-space
-
-           sni-required? sni-host-check?]
-    :or {input-buffer-size 8192
-         output-buffer-size 32768
-         output-aggregation-size 8192
-         request-header-size 8192
-         response-header-size 8192
-         max-response-header-size 16384
-         header-cache-size 1024
-         header-cache-case-sensitive? false
-         secure-port 443
-         idle-timeout -1
-         secure-scheme "https"
-         send-server-version? true
-         send-x-powered-by? false
-         send-date-header? true
-         delay-dispatch-until-content? true
-         persistent-connections-enabled? true
-         max-error-dispatches 10
-         use-input-direct-byte-buffers? true
-         use-output-direct-byte-buffers? true
-         min-request-data-rate 0
-         min-response-data-rate 0
-         http-compliance HttpCompliance/RFC9110
-         uri-compliance UriCompliance/DEFAULT
-         redirect-uri-compliance UriCompliance/DEFAULT
-         request-cookie-compliance CookieCompliance/RFC6265
-         response-cookie-compliance CookieCompliance/RFC6265
-         multi-part-compliance MultiPartCompliance/RFC7578
-         notify-remote-async-errors? true
-         relative-redirect-allowed? true
-         generate-redirect-body? false
-         server-authority nil
-         local-address nil
-         max-unconsumed-request-content-reads 16
-         min-input-buffer-space 1500
-
-         sni-required? false
+  [{:as http-options
+    :keys [sni-required? sni-host-check?]
+    :or {sni-required? false
          sni-host-check? true}}]
   (let [secure-customizer (doto (SecureRequestCustomizer.)
                             (.setSniRequired sni-required?)
-                            (.setSniHostCheck sni-host-check?))]
-    (doto (HttpConfiguration.)
-      (.setInputBufferSize input-buffer-size)
-      (.setOutputBufferSize output-buffer-size)
-      (.setOutputAggregationSize output-aggregation-size)
-      (.setRequestHeaderSize request-header-size)
-      (.setResponseHeaderSize response-header-size)
-      (.setMaxResponseHeaderSize max-response-header-size)
-      (.setHeaderCacheSize header-cache-size)
-      (.setHeaderCacheCaseSensitive header-cache-case-sensitive?)
-      (.setSecurePort secure-port)
-      (.setIdleTimeout idle-timeout)
-      (.setSecureScheme secure-scheme)
-      (.setSendServerVersion send-server-version?)
-      (.setSendXPoweredBy send-x-powered-by?)
-      (.setSendDateHeader send-date-header?)
-      (.setDelayDispatchUntilContent delay-dispatch-until-content?)
-      (.setPersistentConnectionsEnabled persistent-connections-enabled?)
-      (.setMaxErrorDispatches max-error-dispatches)
-      (.setUseInputDirectByteBuffers use-input-direct-byte-buffers?)
-      (.setUseOutputDirectByteBuffers use-output-direct-byte-buffers?)
-      (.setMinRequestDataRate min-request-data-rate)
-      (.setMinResponseDataRate min-response-data-rate)
-      (.setHttpCompliance http-compliance)
-      (.setUriCompliance uri-compliance)
-      (.setRedirectUriCompliance redirect-uri-compliance)
-      (.setRequestCookieCompliance request-cookie-compliance)
-      (.setResponseCookieCompliance response-cookie-compliance)
-      (.setMultiPartCompliance multi-part-compliance)
-      (.setNotifyRemoteAsyncErrors notify-remote-async-errors?)
-      (.setRelativeRedirectAllowed relative-redirect-allowed?)
-      (.setGenerateRedirectBody generate-redirect-body?)
-      (.setServerAuthority server-authority)
-      (.setLocalAddress local-address)
-      (.setMaxUnconsumedRequestContentReads max-unconsumed-request-content-reads)
-      (.setMinInputBufferSpace min-input-buffer-space)
+                            (.setSniHostCheck sni-host-check?))
+        http-configuration (HttpConfiguration.)]
+
+    (common/cond->-config-options http-configuration http-options
+                                  [:input-buffer-size
+                                   :output-buffer-size
+                                   :output-aggregation-size
+                                   :request-header-size
+                                   :response-header-size
+                                   :max-response-header-size
+                                   :header-cache-size
+                                   :header-cache-case-sensitive?
+                                   :secure-port
+                                   :idle-timeout
+                                   :secure-scheme
+                                   :send-server-version?
+                                   :send-x-powered-by?
+                                   :send-date-header?
+                                   :delay-dispatch-until-content?
+                                   :persistent-connections-enabled?
+                                   :max-error-dispatches
+                                   :use-input-direct-byte-buffers?
+                                   :use-output-direct-byte-buffers?
+                                   :min-request-data-rate
+                                   :min-response-data-rate
+                                   :http-compliance
+                                   :uri-compliance
+                                   :redirect-uri-compliance
+                                   :request-cookie-compliance
+                                   :response-cookie-compliance
+                                   :multi-part-compliance
+                                   :notify-remote-async-errors?
+                                   :relative-redirect-allowed?
+                                   :generate-redirect-body?
+                                   :server-authority
+                                   :local-address
+                                   :max-unconsumed-request-content-reads
+                                   :min-input-buffer-space])
+    (doto http-configuration
       (.addCustomizer secure-customizer))))
 
 (defn- ssl-context-factory

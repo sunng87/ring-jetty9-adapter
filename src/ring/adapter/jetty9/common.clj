@@ -98,3 +98,13 @@
         (->>
          (Response/asBufferedOutputStream request response)
          (protocols/write-body-to-stream body response-map))))))
+
+(defmacro cond->-config-options [configuration options config-items]
+  `(cond-> ~configuration
+     ~@(mapcat (fn [item]
+                 (let [item-name (clojure.string/replace (name item) #"\?$" "")
+                       camel-case-item (clojure.string/replace item-name #"-." #(clojure.string/upper-case (subs % 1)))
+                       pascal-case-item (str (clojure.string/upper-case (subs camel-case-item 0 1)) (subs camel-case-item 1))]
+                   [`(contains? ~options ~item)
+                    `(doto (. ~(symbol (str "set" pascal-case-item)) (~item ~options)))]))
+               config-items)))

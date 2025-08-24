@@ -9,7 +9,8 @@
 (defmacro cond->-config-options [configuration options config-items]
   `(cond-> ~configuration
      ~@(mapcat (fn [item]
-                 (let [camel-case-item (clojure.string/replace (name item) #"-." #(clojure.string/upper-case (subs % 1)))
+                 (let [item-name (clojure.string/replace (name item) #"\?$" "")
+                       camel-case-item (clojure.string/replace item-name #"-." #(clojure.string/upper-case (subs % 1)))
                        pascal-case-item (str (clojure.string/upper-case (subs camel-case-item 0 1)) (subs camel-case-item 1))]
                    [`(contains? ~options ~item)
                     `(doto (. ~(symbol (str "set" pascal-case-item)) (~item ~options)))]))
@@ -39,7 +40,7 @@
                             :bidirectional-max-streams :unidirectional-max-streams
 
                             :input-buffer-size :output-buffer-size
-                            :use-input-direct-byte-buffers :use-output-direct-byte-buffers
+                            :use-input-direct-byte-buffers? :use-output-direct-byte-buffers?
 
                             :stream-idle-timeout :min-input-buffer-space])
 
