@@ -99,7 +99,7 @@
     (if (string? keystore)
       (if (string/starts-with? keystore "classpath:")
         (.setKeyStoreResource context-server (.newSystemResource (URLResourceFactory.) (subs keystore 10)))
-        (.setKeyStorePath context-server keystore))
+        (.setKeyStorePath context-server ^String keystore))
       (.setKeyStore context-server ^KeyStore keystore))
     (when (string? keystore-type)
       (.setKeyStoreType context-server keystore-type))
