@@ -1,5 +1,6 @@
 (ns ring.adapter.jetty9.common
-  (:require [ring.core.protocols :as protocols])
+  (:require [ring.core.protocols :as protocols]
+            [clojure.string])
   (:import [org.eclipse.jetty.http HttpHeader HttpField MimeTypes MimeTypes$Type]
            [org.eclipse.jetty.server Request Response]
            [org.eclipse.jetty.io EndPoint$SslSessionData]
