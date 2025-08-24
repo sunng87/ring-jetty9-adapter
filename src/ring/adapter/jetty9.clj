@@ -17,7 +17,8 @@
            [ring.adapter.jetty9.handlers SyncProxyHandler AsyncProxyHandler])
   (:require
    [clojure.string :as string]
-   [ring.adapter.jetty9.websocket :as ws]))
+   [ring.adapter.jetty9.websocket :as ws]
+   [ring.adapter.jetty9.common :as common]))
 
 (def ws-upgrade-request? ws/ws-upgrade-request?)
 
@@ -33,36 +34,51 @@
 
 (defn- http-config
   "Creates jetty http configurator"
-  [{:as _
-    :keys [ssl-port secure-scheme output-buffer-size output-aggregation-size
-           request-header-size response-header-size send-server-version? send-date-header?
-           header-cache-size sni-required? sni-host-check?]
-    :or {ssl-port 443
-         secure-scheme "https"
-         output-buffer-size 32768
-         output-aggregation-size 8192
-         request-header-size 8192
-         response-header-size 8192
-         send-server-version? true
-         send-date-header? false
-         header-cache-size 1024
-         sni-required? false
+  [{:as http-options
+    :keys [sni-required? sni-host-check?]
+    :or {sni-required? false
          sni-host-check? true}}]
   (let [secure-customizer (doto (SecureRequestCustomizer.)
                             (.setSniRequired sni-required?)
-                            (.setSniHostCheck sni-host-check?))]
-    (doto (HttpConfiguration.)
-      (.setSecureScheme secure-scheme)
-      (.setSecurePort ssl-port)
-      (.setOutputBufferSize output-buffer-size)
-      (.setOutputAggregationSize output-aggregation-size)
-      (.setRequestHeaderSize request-header-size)
-      (.setResponseHeaderSize response-header-size)
-      (.setSendServerVersion send-server-version?)
-      (.setSendDateHeader send-date-header?)
-      (.setHeaderCacheSize header-cache-size)
-      ;; duplicated with http configuration :max-idle-time
-      #_(.setIdleTimeout idle-timeout-ms)
+                            (.setSniHostCheck sni-host-check?))
+        http-configuration (HttpConfiguration.)]
+
+    (common/cond->-config-options http-configuration http-options
+                                  [:input-buffer-size
+                                   :output-buffer-size
+                                   :output-aggregation-size
+                                   :request-header-size
+                                   :response-header-size
+                                   :max-response-header-size
+                                   :header-cache-size
+                                   :header-cache-case-sensitive?
+                                   :secure-port
+                                   :idle-timeout
+                                   :secure-scheme
+                                   :send-server-version?
+                                   :send-x-powered-by?
+                                   :send-date-header?
+                                   :delay-dispatch-until-content?
+                                   :persistent-connections-enabled?
+                                   :max-error-dispatches
+                                   :use-input-direct-byte-buffers?
+                                   :use-output-direct-byte-buffers?
+                                   :min-request-data-rate
+                                   :min-response-data-rate
+                                   :http-compliance
+                                   :uri-compliance
+                                   :redirect-uri-compliance
+                                   :request-cookie-compliance
+                                   :response-cookie-compliance
+                                   :multi-part-compliance
+                                   :notify-remote-async-errors?
+                                   :relative-redirect-allowed?
+                                   :generate-redirect-body?
+                                   :server-authority
+                                   :local-address
+                                   :max-unconsumed-request-content-reads
+                                   :min-input-buffer-space])
+    (doto http-configuration
       (.addCustomizer secure-customizer))))
 
 (defn- ssl-context-factory
@@ -274,10 +290,7 @@
   :sni-host-check? - enable host check for secure connection, default to true
   :http3? - enable http3 protocol, make sure you have `info.sunng/ring-jetty9-adapter-http3` package on classpath
   :http3-pem-work-directory - required when http3 enabled, specify a directory as http3 pem work dir
-  :http3-options - map with options specific for http3
-                  (all setters from https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/http3/HTTP3Configuration.html
-                   and https://www.eclipse.org/jetty/javadoc/jetty-11/org/eclipse/jetty/quic/common/QuicConfiguration.html,
-                   kebab cased without \"set\", e.g. setStreamIdleTimeout -> stream-idle-timeout)"
+  :http3-options - map with options specific for http3/quic, all properties are following org.eclipse.jetty.quic.common.QuicConfiguration"
   [handler {:as options
             :keys [configurator join? async?
                    wrap-jetty-handler]
