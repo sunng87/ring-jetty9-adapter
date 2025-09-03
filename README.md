@@ -196,7 +196,7 @@ with a websocket handler.
   (if (jetty/ws-upgrade-request? req)
     {:ring.websocket/listener ws-handler}))
 
-(run-jetty app)
+(jetty/run-jetty app {:port 5000})
 ```
 
 In the javascript:
