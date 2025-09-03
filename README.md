@@ -194,7 +194,7 @@ with a websocket handler.
 
 (defn app [req]
   (if (jetty/ws-upgrade-request? req)
-    (jetty/ws-upgrade-response ws-handler)))
+    {:ring.websocket/listener ws-handler}))
 
 (run-jetty app)
 ```
