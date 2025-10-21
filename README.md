@@ -25,7 +25,7 @@ version works for your stack, check the version matrix below.
 
 | rj9a | Jetty | JDK | Clojure | Servlet API | Ring API | Maintained? |
 | --- | --- | --- | --- | --- | --- | --- |
-| HEAD | 12.0.x | 17 | 1.12 | N/A | 1.14 | true |
+| HEAD | 12.1.x | 17 | 1.12 | N/A | 1.15 | true |
 | 0.33.x | 12.0.x | 17 | 1.11 | N/A | 1.12 | false |
 | 0.32.x | 12.0.x | 17 | 1.11 | N/A | 1.11 | false |
 | 0.30.x | 12.0.x | 17 | 1.11 | N/A | 1.10 | false |
