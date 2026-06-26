@@ -74,6 +74,32 @@
       (is (= 200 (:status resp)))
       (is (= "yes" (:body resp))))))
 
+(deftest jetty9-async-handler-test
+  (let [handler-thread-name (atom nil)]
+    (with-jetty [server [(fn [req respond raise]
+                           ;; capture the thread the handler runs on so we
+                           ;; can assert it was dispatched onto a Jetty
+                           ;; QueuedThreadPool worker thread, rather than
+                           ;; running inline on the selector/acceptor thread
+                           ;; (see issue #170)
+                           (reset! handler-thread-name (.getName (Thread/currentThread)))
+                           (respond {:status 200 :body "async-yes"}))
+                         {:port 50524
+                          :join? false
+                          :async? true}]]
+      (is server)
+      (let [resp (client/get "http://localhost:50524/")
+            name @handler-thread-name]
+        (is (= 200 (:status resp)))
+        (is (= "async-yes" (:body resp)))
+        ;; the handler must have actually executed
+        (is (some? name))
+        ;; QueuedThreadPool workers are named `qtp<id>-<n>`; selector and
+        ;; acceptor threads carry a `-selector-` / `-acceptor-` suffix, so
+        ;; matching the bare pattern proves we were dispatched to the pool
+        (is (re-matches #"qtp\d+-\d+" name)
+            (str "async handler ran on '" name "', expected a qtp worker thread"))))))
+
 (deftest jetty9-post-test
   (with-jetty [server [(test-app-maker {:request-method :post
                                         :content-type "text/plain"
