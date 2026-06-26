@@ -1,5 +1,5 @@
 (def jetty-version "12.1.9")
-(def ring-version "1.15.3")
+(def ring-version "1.15.5")
 
 (defproject info.sunng/ring-jetty9-adapter "0.40.0-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket, http/2 and http/3"
@@ -20,8 +20,8 @@
   :jvm-args ["-Xmx128m"]
   :aot [ring.adapter.jetty9.handlers.sync
         ring.adapter.jetty9.handlers.async]
-  :profiles {:dev {:dependencies [[clj-http "3.13.0"]
-                                  [less-awful-ssl "1.0.7"]
+  :profiles {:dev {:dependencies [[clj-http "3.13.1"]
+                                  [less-awful-ssl "1.0.8"]
                                   [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
                                   #_[stylefruits/gniazdo "1.1.4"]]
                    :resource-paths ["dev-resources"]}
