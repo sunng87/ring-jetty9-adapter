@@ -100,6 +100,60 @@
         (is (re-matches #"qtp\d+-\d+" name)
             (str "async handler ran on '" name "', expected a qtp worker thread"))))))
 
+(deftest jetty9-async-timeout-handler-test
+  ;; When the main handler never responds, a configured
+  ;; `async-timeout-handler` takes over after `async-timeout` ms.
+  (let [timeout-called (atom false)]
+    (with-jetty [server [(fn [req respond raise]
+                           ;; intentionally never respond; let the timeout fire
+                           nil)
+                         {:port 50524
+                          :join? false
+                          :async? true
+                          :async-timeout 200
+                          :async-timeout-handler (fn [req respond raise]
+                                                   (reset! timeout-called true)
+                                                   (respond {:status 503 :body "timeout"}))}]]
+      (is server)
+      (let [resp (client/get "http://localhost:50524/" {:throw-exceptions false})]
+        (is (= 503 (:status resp)))
+        (is (= "timeout" (:body resp)))
+        (is (true? @timeout-called))))))
+
+(deftest jetty9-async-timeout-default-test
+  ;; With no `async-timeout-handler`, an expired timeout fails the
+  ;; callback, yielding a 500 from Jetty.
+  (with-jetty [server [(fn [req respond raise]
+                         ;; intentionally never respond
+                         nil)
+                       {:port 50524
+                        :join? false
+                        :async? true
+                        :async-timeout 200}]]
+    (is server)
+    (let [resp (client/get "http://localhost:50524/" {:throw-exceptions false})]
+      (is (= 500 (:status resp))))))
+
+(deftest jetty9-async-timeout-cancelled-test
+  ;; When the handler responds before the deadline, the timeout task is
+  ;; cancelled and the timeout-handler must NOT run.
+  (let [timeout-called (atom false)]
+    (with-jetty [server [(fn [req respond raise]
+                           (respond {:status 200 :body "fast"}))
+                         {:port 50524
+                          :join? false
+                          :async? true
+                          :async-timeout 5000
+                          :async-timeout-handler (fn [req respond raise]
+                                                   (reset! timeout-called true))}]]
+      (is server)
+      (let [resp (client/get "http://localhost:50524/")]
+        (is (= 200 (:status resp)))
+        (is (= "fast" (:body resp)))
+        ;; give the (cancelled) timeout ample time to prove it won't fire
+        (Thread/sleep 1000)
+        (is (false? @timeout-called))))))
+
 (deftest jetty9-post-test
   (with-jetty [server [(test-app-maker {:request-method :post
                                         :content-type "text/plain"
