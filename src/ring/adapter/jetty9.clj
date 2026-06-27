@@ -238,6 +238,8 @@
   :port - the port to listen on (defaults to 80)
   :host - the hostname to listen on
   :async? - using Ring 1.6 async handler?
+  :async-timeout - the maximum time in milliseconds for an async request to complete (default 0, no timeout)
+  :async-timeout-handler - an optional 3-arity async handler invoked when `:async-timeout` elapses before the main handler responds; receives the request map and the same respond/raise callbacks. When omitted, a timed-out request fails with a 500.
   :join? - blocks the thread until server ends (defaults to true)
   :daemon? - use daemon threads (defaults to false)
   :ssl? - allow connections over HTTPS
