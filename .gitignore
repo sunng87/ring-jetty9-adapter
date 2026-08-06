@@ -17,3 +17,4 @@ pom.xml.asc
 /.nrepl-port
 /.clj-kondo
 /.lsp
+pom.xml.sig
