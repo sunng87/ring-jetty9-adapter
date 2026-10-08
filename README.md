@@ -139,6 +139,9 @@ it an optional feature. To enable HTTP/3 support, you will need to:
   project to bring in HTTP/3 staff. Remember to replace `VERSION` with our
   latest release, which can be checked
   [here](https://clojars.org/info.sunng/ring-jetty9-adapter-http3)
+* Add explicit jetty quiche implementation, JNA(JDK 17+) or FFM(JDK 22+), [see
+  more
+  information](https://jetty.org/docs/jetty/12.1/programming-guide/server/http3.html).
 * Provide certficate and key just like HTTPs setup because HTTP/3 is
   secure by default. There is no plaintext fallback for now.
 * Provide option `:http3? true` and a work directory to for pem

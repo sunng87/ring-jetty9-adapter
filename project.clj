@@ -23,6 +23,7 @@
   :profiles {:dev {:dependencies [[clj-http "3.13.1"]
                                   [less-awful-ssl "1.0.8"]
                                   [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
+                                  [org.eclipse.jetty.quic/jetty-quic-quiche-foreign ~jetty-version]
                                   #_[stylefruits/gniazdo "1.1.4"]]
                    :resource-paths ["dev-resources"]}
              :example-http2 {:source-paths ["examples/"]
