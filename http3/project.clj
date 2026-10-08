@@ -9,4 +9,10 @@
   :global-vars {*warn-on-reflection* true}
   :dependencies [[org.clojure/clojure "1.12.6"]
                  [org.eclipse.jetty.http3/jetty-http3-server ~jetty-version]
-                 [org.eclipse.jetty.quic/jetty-quic-quiche-server ~jetty-version]])
+                 [org.eclipse.jetty.quic/jetty-quic-quiche-server ~jetty-version]]
+  :profiles {:dev {:dependencies [[clj-http "3.13.1"]
+                                  [less-awful-ssl "1.0.8"]
+                                  [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
+                                  [org.eclipse.jetty.quic/jetty-quic-quiche-foreign ~jetty-version]
+                                  #_[stylefruits/gniazdo "1.1.4"]]
+                   :resource-paths ["dev-resources"]}})
