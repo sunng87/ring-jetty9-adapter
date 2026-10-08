@@ -15,4 +15,4 @@
                                   [org.eclipse.jetty/jetty-slf4j-impl ~jetty-version]
                                   [org.eclipse.jetty.quic/jetty-quic-quiche-foreign ~jetty-version]
                                   #_[stylefruits/gniazdo "1.1.4"]]
-                   :resource-paths ["dev-resources"]})
+                   :resource-paths ["dev-resources"]}})
