@@ -53,8 +53,19 @@
         (ring-ws/on-message listener @session message))
       (^void onWebSocketClose [_this ^int status ^String reason]
         (ring-ws/on-close listener @session status reason))
-      (^void onWebSocketBinary [_this ^ByteBuffer payload ^Callback _cb]
-        (ring-ws/on-message listener @session payload))
+      (^void onWebSocketBinary [_this ^ByteBuffer payload ^Callback cb]
+        (let [error (try
+                      ;; Jetty may recycle payload when cb completes. Ring listeners
+                      ;; do not receive cb, so give them bytes they can retain.
+                      (let [owned (doto (ByteBuffer/allocate (ByteBuffer/.remaining payload))
+                                    (ByteBuffer/.put (ByteBuffer/.duplicate payload))
+                                    ByteBuffer/.flip)]
+                        (ring-ws/on-message listener @session owned))
+                      nil
+                      (catch Throwable t t))]
+          (if error
+            (Callback/.fail cb error)
+            (Callback/.succeed cb))))
       (^void onWebSocketPing [_this ^ByteBuffer bytebuffer]
         (when (satisfies? ring-ws/PingListener listener)
           (ring-ws/on-ping listener @session bytebuffer)))
