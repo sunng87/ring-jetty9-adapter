@@ -53,16 +53,6 @@ maintaining it.
 
 [![latest version on clojars](http://clojars.org/info.sunng/ring-jetty9-adapter/latest-version.svg)](https://clojars.org/info.sunng/ring-jetty9-adapter)
 
-### Clojure CLI / Git dependencies
-
-This checkout includes `deps.edn` with the same runtime dependency versions as
-`project.clj`. A Git dependency uses the repository URL and a full commit SHA.
-Run `clojure -X:deps prep` in the consuming project before its first use; the
-adapter's prep task compiles its generated synchronous and asynchronous Jetty
-handler classes. HTTP/2 and HTTP/3 remain separate optional dependencies.
-
-To prepare this repository directly, run `clojure -T:build compile-handlers`.
-
 ### Code
 
 In the REPL:

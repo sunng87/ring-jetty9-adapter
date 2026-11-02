@@ -16,6 +16,5 @@ pom.xml.asc
 *.iml
 /.nrepl-port
 /.clj-kondo
-/.cpcache
 /.lsp
 pom.xml.sig
