@@ -1,5 +1,5 @@
 (def jetty-version "12.1.15")
-(def ring-version "1.15.5")
+(def ring-version "1.15.6")
 
 (defproject info.sunng/ring-jetty9-adapter "0.40.7-SNAPSHOT"
   :description "Ring adapter for jetty9, which supports websocket, http/2 and http/3"
